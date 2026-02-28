@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#F7F5F0">
+<title>Field Command Center</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#F7F5F0;--sf:#FFFFFF;--sf2:#F0EDE7;--bd:#E0DBD2;--g:#5B8C5A;--gl:#E8F0E7;--br:#8B6914;--brl:#F5EDD8;--r:#C0392B;--rl:#FBEAE8;--bl:#2E75B6;--bll:#E3EFF8;--o:#D4740E;--ol:#FDF0E0;--tx:#2D2A24;--t2:#6B6560;--t3:#9E9890;--fn:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--rd:16px;--sh:0 2px 12px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--tx);font-family:var(--fn);font-size:15px;min-height:100vh;overflow-x:hidden}
+input,select,button,textarea{font-family:var(--fn);font-size:16px;color:var(--tx)}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-thumb{background:#ccc;border-radius:9px}
+.hdr{position:sticky;top:0;z-index:90;background:rgba(247,245,240,.95);backdrop-filter:blur(12px);padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bd)}
+.hbk{width:34px;height:34px;border-radius:10px;border:1px solid var(--bd);background:var(--sf);color:var(--t2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hbk:active{background:var(--sf2)}
+.hi{flex:1;min-width:0}.hp{font-size:11px;color:var(--g);font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.ht{font-size:17px;font-weight:800;line-height:1.2}.hr{text-align:right}
+.hd{font-size:12px;color:var(--t2);font-weight:600}.hc{font-size:14px;font-weight:800;color:var(--g)}
+.ct{padding:12px 16px 100px}.gap{display:flex;flex-direction:column;gap:10px}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:fi .2s ease-out}
+.cd{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rd);padding:14px;box-shadow:var(--sh)}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ki{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:10px 6px;text-align:center;box-shadow:var(--sh)}
+.kn{font-size:24px;font-weight:900;line-height:1}.kl{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.3px;margin-top:3px}
+.sec{font-size:12px;font-weight:800;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.bw{margin-bottom:8px}.bh{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:3px}
+.bt{height:7px;background:var(--sf2);border-radius:99px;overflow:hidden}.bf{height:100%;border-radius:99px;transition:width .5s}
+.cps{display:flex;gap:5px;overflow-x:auto;padding-bottom:3px;-webkit-overflow-scrolling:touch}
+.cp{padding:7px 12px;border-radius:18px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;border:1.5px solid var(--bd);background:var(--sf);color:var(--t2)}
+.cp.on{background:var(--g);color:#fff;border-color:var(--g)}.cp:active{transform:scale(.96)}
+.bg{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+.bg-g{background:var(--gl);color:var(--g)}.bg-r{background:var(--rl);color:var(--r)}
+.bg-o{background:var(--ol);color:var(--o)}.bg-b{background:var(--bll);color:var(--bl)}.bg-y{background:var(--sf2);color:var(--t3)}
+.al{border-radius:12px;padding:10px 12px;display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+.al-w{background:var(--ol);border-left:3px solid var(--o)}.al-d{background:var(--rl);border-left:3px solid var(--r)}.al-i{background:var(--bll);border-left:3px solid var(--bl)}
+.al-ic{font-size:18px;flex-shrink:0}.al-t{font-size:13px;font-weight:800}.al-m{font-size:12px;color:var(--t2);margin-top:1px;line-height:1.3}
+.pc{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:12px;box-shadow:var(--sh);cursor:pointer;transition:all .1s}
+.pc:active{transform:scale(.98);border-color:var(--g)}
+.pr{display:flex;align-items:center;gap:10px}
+.pi{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0}
+.pn{font-size:14px;font-weight:700}.ps{font-size:11px;color:var(--t3);font-weight:600;margin-top:1px}
+.pst{margin-left:auto;text-align:right;flex-shrink:0}
+.btn{width:100%;padding:12px;border-radius:12px;border:none;font-size:15px;font-weight:800;cursor:pointer;color:#fff;transition:transform .1s}
+.btn:active{transform:scale(.98)}
+.btn-g{background:var(--g)}.btn-br{background:var(--br)}.btn-bl{background:var(--bl)}.btn-r{background:var(--r)}
+.btn-o{background:transparent;border:1.5px solid var(--bd);color:var(--t2)}
+.btn-ex{background:linear-gradient(135deg,#5B8C5A,#4A7A49)}
+.nv{position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(247,245,240,.96);backdrop-filter:blur(12px);border-top:1px solid var(--bd);display:flex;justify-content:space-around;padding:5px 6px 14px;gap:2px}
+.nb{display:flex;flex-direction:column;align-items:center;padding:5px 6px;border-radius:12px;cursor:pointer;border:none;background:transparent;color:var(--t3);position:relative;min-width:52px}
+.nb.on{color:var(--g)}.nb.on::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:18px;height:3px;border-radius:9px;background:var(--g)}
+.nb:active{transform:scale(.92)}.ni{font-size:20px;line-height:1}.nl{font-size:9px;font-weight:700;letter-spacing:.2px;margin-top:1px}
+.nbg{position:absolute;top:-2px;right:2px;min-width:16px;height:16px;border-radius:50%;background:var(--r);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.ov{position:fixed;inset:0;z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.ovb{position:absolute;inset:0;background:rgba(0,0,0,.3)}
+.md{position:relative;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;background:var(--bg);border-radius:20px 20px 0 0;border:1px solid var(--bd);border-bottom:none}
+.mh{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--bd);background:var(--bg)}
+.mt{font-size:17px;font-weight:800}
+.mx{width:34px;height:34px;border-radius:50%;border:1px solid var(--bd);background:var(--sf);color:var(--t2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mb{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.fl label{display:block;font-size:11px;font-weight:700;color:var(--t3);margin-bottom:3px;letter-spacing:.5px;text-transform:uppercase}
+.fl input,.fl select,.fl textarea{width:100%;border-radius:10px;padding:10px;font-size:14px;font-weight:600;border:1.5px solid var(--bd);background:var(--sf);color:var(--tx);outline:none}
+.fl input:focus,.fl select:focus,.fl textarea:focus{border-color:var(--g)}
+.fl select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+.fl textarea{resize:vertical;min-height:50px;font-size:13px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ds{border-top:1px solid var(--bd);padding-top:10px;margin-top:4px}
+.dr{display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;gap:10px}
+.dl{font-size:12px;color:var(--t3);font-weight:600;flex-shrink:0}.dv{font-size:13px;font-weight:700;text-align:right;word-break:break-word}
+.eb{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:12px;border:2px solid var(--g);background:var(--gl);color:var(--g);font-size:14px;font-weight:800;cursor:pointer}
+.eb:active{background:var(--g);color:#fff}
+.sd{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:12px;box-shadow:var(--sh)}
+.sdt{font-size:13px;font-weight:800;color:var(--g)}.sdi{margin-top:6px;display:flex;flex-direction:column;gap:4px}
+.si{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;background:var(--sf2);font-size:12px}
+.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sin{flex:1;font-weight:700;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.siz{font-size:11px;color:var(--t3);font-weight:600}
+.lgn{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(180deg,#F7F5F0 0%,#E8F0E7 100%)}
+.lb{max-width:360px;width:100%;text-align:center}
+.ll{font-size:48px;margin-bottom:10px}.lti{font-size:22px;font-weight:900;color:var(--g)}
+.lsu{font-size:13px;color:var(--t3);font-weight:600;margin-bottom:24px;letter-spacing:1px}
+.pjc{background:var(--sf);border:1.5px solid var(--bd);border-radius:var(--rd);padding:16px;cursor:pointer;box-shadow:var(--sh);transition:all .1s}
+.pjc:active{transform:scale(.98);border-color:var(--g)}
+.pjc h3{font-size:16px;font-weight:800}.pjc p{font-size:12px;color:var(--t3);font-weight:600;margin-top:3px}
+.sy{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+.sy.ok{background:var(--gl);color:var(--g)}.sy.off{background:var(--rl);color:var(--r)}.sy.ld{background:var(--bll);color:var(--bl)}
+.rb{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+.ra{background:var(--brl);color:var(--br)}.ru{background:var(--bll);color:var(--bl)}
+.ib{width:34px;height:34px;border-radius:10px;border:1px solid var(--bd);background:var(--sf);color:var(--t2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ib:active{background:var(--sf2)}
+.qb{padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--bd);background:var(--sf)}
+.qb:active{transform:scale(.95)}.qo{border-color:var(--g);color:var(--g);background:var(--gl)}
+.qw{border-color:var(--o);color:var(--o);background:var(--ol)}.qx{border-color:var(--r);color:var(--r);background:var(--rl)}
+.zc{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:12px;box-shadow:var(--sh)}
+.zn{font-size:14px;font-weight:800}.zs{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.zst{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+.sc-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:12px;box-shadow:var(--sh)}
+@media(min-width:640px){.md{border-radius:20px;border-bottom:1px solid var(--bd);max-height:80vh}.ov{align-items:center}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+var JSONBIN_API_KEY='$2a$10$GANTI_DENGAN_API_KEY_ANDA';
+var JSONBIN_BIN_ID='GANTI_DENGAN_BIN_ID_ANDA';
+var ADMIN_PASSWORD='adminmeg123';
+var SEED={
+"plts-res":{name:"PLTS PT. RES",type:"soil-test",zones:[{"nama": "Blongkeng", "tokoh": ["Pak RT Blongkeng"], "status": "Aktif", "catatan": "Zona pertama dikerjakan"}, {"nama": "Monggak", "tokoh": ["Koordinator Monggak"], "status": "Aktif", "catatan": "Zona kedua paralel"}, {"nama": "Sei Buluh", "tokoh": ["Koordinator Sei Buluh"], "status": "Siap", "catatan": "CPT & Electrical"}, {"nama": "Sei Raya", "tokoh": ["Koordinator Sei Raya"], "status": "Siap", "catatan": "CPT area"}, {"nama": "Sembulang Hulu", "tokoh": ["Koordinator Sembulang"], "status": "Aktif", "catatan": "Zona terbanyak titik"}, {"nama": "Pasir Panjang", "tokoh": ["Koordinator Pasir Panjang"], "status": "Siap", "catatan": "Electrical & TP"}],points:[{"id": "PV-BH6", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Blongkeng", "helper": 3, "durasi": "3 hari", "mulai": "2026-02-22", "selesai": "2026-02-24", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-BH7", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Blongkeng", "helper": 3, "durasi": "3 hari", "mulai": "2026-02-19", "selesai": "2026-02-21", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-BH5", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Blongkeng", "helper": 3, "durasi": "3 hari", "mulai": "2026-03-01", "selesai": "2026-03-03", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-BH5", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Sembulang Hulu", "helper": 3, "durasi": "4 hari", "mulai": "2026-02-26", "selesai": "2026-03-01", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-BH6", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Sembulang Hulu", "helper": 3, "durasi": "4 hari", "mulai": "2026-02-22", "selesai": "2026-02-25", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-BH7", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Sembulang Hulu", "helper": 3, "durasi": "4 hari", "mulai": "2026-03-02", "selesai": "2026-03-05", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "TL-BH1", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Sembulang Hulu", "helper": 3, "durasi": "4 hari", "mulai": "2026-02-25", "selesai": "2026-02-28", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-BH1", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Monggak", "helper": 3, "durasi": "3 hari", "mulai": "2026-02-24", "selesai": "2026-02-26", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-BH2", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Monggak", "helper": 3, "durasi": "3 hari", "mulai": "2026-02-27", "selesai": "2026-03-01", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-BH3", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Monggak", "helper": 3, "durasi": "3 hari", "mulai": "2026-03-02", "selesai": "2026-03-04", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-BH9", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Sembulang Hulu", "helper": 3, "durasi": "3 hari", "mulai": "2026-03-07", "selesai": "2026-03-09", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-BH10", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Sembulang Hulu", "helper": 3, "durasi": "3 hari", "mulai": "2026-03-10", "selesai": "2026-03-12", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "TL-BH2", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Sei Buluh", "helper": 3, "durasi": "5 hari", "mulai": "2026-03-02", "selesai": "2026-03-06", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "TL-BH7", "jenis": "Deep Boring", "kategori": "\u26cf\ufe0f Boring", "zona": "Monggak", "helper": 3, "durasi": "5 hari", "mulai": "2026-03-05", "selesai": "2026-03-09", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 1", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Blongkeng", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-18", "selesai": "2026-02-18", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT2", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Blongkeng", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-18", "selesai": "2026-02-18", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 3", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Monggak", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-19", "selesai": "2026-02-19", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 4", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Monggak", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-20", "selesai": "2026-02-20", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "TL-E RT 8", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Monggak", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-21", "selesai": "2026-02-21", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 5", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-27", "selesai": "2026-02-27", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 6", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-28", "selesai": "2026-02-28", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 7", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-03-01", "selesai": "2026-03-01", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 12", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-03-02", "selesai": "2026-03-02", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 13", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-03-03", "selesai": "2026-03-03", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 14", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-21", "selesai": "2026-02-21", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "TL-E RT 2", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Sei Buluh", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-26", "selesai": "2026-02-26", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 8", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-24", "selesai": "2026-02-24", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 9", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-25", "selesai": "2026-02-25", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 11", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-26", "selesai": "2026-02-26", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 15", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-22", "selesai": "2026-02-22", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 16", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-22", "selesai": "2026-02-22", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-E/T RT 3", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-24", "selesai": "2026-02-24", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-E/T RT 4", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-25", "selesai": "2026-02-25", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "TL-E RT 1", "jenis": "Electrical", "kategori": "\u26a1 Electrical", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-23", "selesai": "2026-02-23", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-TP4", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Blongkeng", "helper": 2, "durasi": "2 hari", "mulai": "2026-02-19", "selesai": "2026-02-20", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-TP1", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Monggak", "helper": 2, "durasi": "2 hari", "mulai": "2026-03-01", "selesai": "2026-03-02", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-TP2", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Monggak", "helper": 2, "durasi": "2 hari", "mulai": "2026-03-03", "selesai": "2026-03-04", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-TP5", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Sembulang Hulu", "helper": 2, "durasi": "2 hari", "mulai": "2026-02-26", "selesai": "2026-02-27", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-TP7", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Sembulang Hulu", "helper": 2, "durasi": "2 hari", "mulai": "2026-02-28", "selesai": "2026-03-01", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-TP8", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Sembulang Hulu", "helper": 2, "durasi": "2 hari", "mulai": "2026-03-02", "selesai": "2026-03-03", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-TP9", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Sembulang Hulu", "helper": 2, "durasi": "2 hari", "mulai": "2026-02-25", "selesai": "2026-02-26", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-TP10", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Sembulang Hulu", "helper": 2, "durasi": "2 hari", "mulai": "2026-03-05", "selesai": "2026-03-06", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-TP11", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Sembulang Hulu", "helper": 2, "durasi": "2 hari", "mulai": "2026-03-07", "selesai": "2026-03-08", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-TP12", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Pasir Panjang", "helper": 2, "durasi": "2 hari", "mulai": "2026-03-08", "selesai": "2026-03-09", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-TP13", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Pasir Panjang", "helper": 2, "durasi": "2 hari", "mulai": "2026-03-10", "selesai": "2026-03-11", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-TP5", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Sembulang Hulu", "helper": 2, "durasi": "2 hari", "mulai": "2026-02-23", "selesai": "2026-02-24", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-TP6", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Sembulang Hulu", "helper": 2, "durasi": "2 hari", "mulai": "2026-02-23", "selesai": "2026-02-24", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-TP7", "jenis": "Test Pit", "kategori": "\ud83d\udd73\ufe0f Test Pit", "zona": "Sembulang Hulu", "helper": 2, "durasi": "2 hari", "mulai": "2026-02-28", "selesai": "2026-03-01", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "TL-CPT01", "jenis": "CPT", "kategori": "\ud83d\udcd0 CPT", "zona": "Sei Buluh", "helper": 3, "durasi": "1 hari", "mulai": "2026-02-26", "selesai": "2026-02-26", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "TL-CPT02", "jenis": "CPT", "kategori": "\ud83d\udcd0 CPT", "zona": "Sei Buluh", "helper": 3, "durasi": "1 hari", "mulai": "2026-02-26", "selesai": "2026-02-26", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "TL-CPT10", "jenis": "CPT", "kategori": "\ud83d\udcd0 CPT", "zona": "Sei Raya", "helper": 3, "durasi": "1 hari", "mulai": "2026-02-24", "selesai": "2026-02-24", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "TL-CPT11", "jenis": "CPT", "kategori": "\ud83d\udcd0 CPT", "zona": "Monggak", "helper": 3, "durasi": "1 hari", "mulai": "2026-02-22", "selesai": "2026-02-22", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 1-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Blongkeng", "helper": 2, "durasi": "1 hari", "mulai": "2026-02-18", "selesai": "2026-02-18", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT2-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Blongkeng", "helper": 2, "durasi": "1 hari", "mulai": "2026-02-18", "selesai": "2026-02-18", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 4-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Monggak", "helper": 2, "durasi": "1 hari", "mulai": "2026-02-20", "selesai": "2026-02-20", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 3-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Monggak", "helper": 2, "durasi": "1 hari", "mulai": "2026-02-20", "selesai": "2026-02-20", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 7-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-21", "selesai": "2026-02-21", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 14-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-21", "selesai": "2026-02-21", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 5-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-23", "selesai": "2026-02-23", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 6-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-23", "selesai": "2026-02-23", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 15-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-22", "selesai": "2026-02-22", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 16-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-22", "selesai": "2026-02-22", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-E/T RT 3-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-25", "selesai": "2026-02-25", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-E/T RT 4-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-25", "selesai": "2026-02-25", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 8-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-24", "selesai": "2026-02-24", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 9-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-24", "selesai": "2026-02-24", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 11-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Sembulang Hulu", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-26", "selesai": "2026-02-26", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 12-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-02-28", "selesai": "2026-02-28", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-E/T RT 13-T", "jenis": "Thermal", "kategori": "\ud83c\udf21\ufe0f Thermal", "zona": "Pasir Panjang", "helper": 4, "durasi": "1 hari", "mulai": "2026-03-01", "selesai": "2026-03-01", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "PV-BH7-PJ", "jenis": "Penjaga", "kategori": "\ud83d\udc77 Penjaga", "zona": "Blongkeng", "helper": 1, "durasi": "3 hari", "mulai": "2026-02-18", "selesai": "2026-02-20", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-BH5-PJ", "jenis": "Penjaga", "kategori": "\ud83d\udc77 Penjaga", "zona": "Sembulang Hulu", "helper": 1, "durasi": "4 hari", "mulai": "2026-03-01", "selesai": "2026-03-04", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-BH6-PJ", "jenis": "Penjaga", "kategori": "\ud83d\udc77 Penjaga", "zona": "Sembulang Hulu", "helper": 1, "durasi": "4 hari", "mulai": "2026-02-25", "selesai": "2026-02-28", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "SS-BH7-PJ", "jenis": "Penjaga", "kategori": "\ud83d\udc77 Penjaga", "zona": "Sembulang Hulu", "helper": 1, "durasi": "4 hari", "mulai": "2026-03-05", "selesai": "2026-03-08", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}, {"id": "TL-BH1-PJ", "jenis": "Penjaga", "kategori": "\ud83d\udc77 Penjaga", "zona": "Sembulang Hulu", "helper": 1, "durasi": "4 hari", "mulai": "2026-03-09", "selesai": "2026-03-12", "status": "Belum Mulai", "sosial": "Belum", "catatan": "", "akses": ""}]},
+"plts-sae":{name:"PLTS PT. SAE",type:"topo-survey",social:[{"nama": "Bpk Amran", "peran": "Tokoh", "sikap": "Mendukung", "catatan": "Siap dampingi soil test/study", "wilayah": "Blongkeng/Monggak"}, {"nama": "Bpk Arifin", "peran": "Tokoh", "sikap": "Mendukung", "catatan": "", "wilayah": "Blongkeng"}, {"nama": "Bpk Anggih", "peran": "Ketua RT005", "sikap": "Kontra", "catatan": "Keberatan masuk kampung, mertua kontra Blongkeng", "wilayah": "RT 005"}, {"nama": "Bpk Kadir", "peran": "Mantan RT", "sikap": "Mendukung", "catatan": "Siap membantu", "wilayah": "Sekitar"}, {"nama": "Ibu Aini & Bpk Herman", "peran": "Warga/Pemilik", "sikap": "Mendukung", "catatan": "Setuju pemasangan BM1", "wilayah": "Area BM-001"}, {"nama": "Bpk Deden", "peran": "Penjaga PT CHAIN", "sikap": "Netral", "catatan": "Koordinasi nanti", "wilayah": "Area BM-001"}, {"nama": "Bpk David", "peran": "Warga", "sikap": "Mendukung", "catatan": "Ganti rugi + relokasi", "wilayah": "Korwil C"}, {"nama": "Bpk Dedi", "peran": "Warga", "sikap": "Mendukung", "catatan": "Lahan bukan Acai Senjaya", "wilayah": "Korwil C"}, {"nama": "Bpk Difa", "peran": "Warga", "sikap": "Mendukung", "catatan": "Relokasi + ganti lahan", "wilayah": "Korwil C"}, {"nama": "Bpk Sianipar", "peran": "Warga", "sikap": "Mendukung", "catatan": "Lahan beli sendiri, siap berunding", "wilayah": "Korwil C"}, {"nama": "Bpk Ujang", "peran": "Warga", "sikap": "Mendukung", "catatan": "Hak masyarakat diganti", "wilayah": "Korwil C"}, {"nama": "Bpk Dakhi", "peran": "Warga", "sikap": "Mendukung", "catatan": "Jangan diusir, duduk bersama", "wilayah": "Korwil C"}, {"nama": "Bpk Sugio", "peran": "Warga", "sikap": "Netral", "catatan": "Tergantung pemilik, harap relokasi", "wilayah": "Korwil C"}],points:[{"id": "BM-001", "jenis": "BM", "lat": 0.931517243, "lon": 104.1173205898, "statusSurvey": "Sudah Disurvey", "tglSurvey": "12/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "Titik Referensi Spasial", "sosial": "Sudah", "pemilik": "Ibu Aini & Bpk Herman", "respon": "Setuju", "prioritas": "Normal"}, {"id": "BM-002", "jenis": "BM", "lat": 0.9219861817, "lon": 104.1209294143, "statusSurvey": "Sudah Disurvey", "tglSurvey": "12/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "", "sosial": "Sudah", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "CP-01", "jenis": "CP", "lat": 0.9204784269, "lon": 104.1214876594, "statusSurvey": "Sudah Disurvey", "tglSurvey": "15/02/2026", "akses": "OK - Motor", "situasi": "Aman", "catatan": "Jalan masuk hanya motor", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "CP-02", "jenis": "CP", "lat": 0.9269495436, "lon": 104.1288330363, "statusSurvey": "Sudah Disurvey", "tglSurvey": "15/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "CP-03", "jenis": "CP", "lat": 0.9324355806, "lon": 104.1351736126, "statusSurvey": "Sudah Disurvey", "tglSurvey": "18/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "Akses jalan masuk", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "CP-04", "jenis": "CP", "lat": 0.92829182, "lon": 104.1230519118, "statusSurvey": "Sudah Disurvey", "tglSurvey": "18/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "CP-05", "jenis": "CP", "lat": 0.9328479301, "lon": 104.1296654543, "statusSurvey": "Sudah Disurvey", "tglSurvey": "18/02/2026", "akses": "Susah/Terbatas", "situasi": "Perlu Perhatian", "catatan": "Susah masuk, kandang ayam & hutan", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Sedang"}, {"id": "CP-06", "jenis": "CP", "lat": 0.9335179717, "lon": 104.1230437084, "statusSurvey": "Sudah Disurvey", "tglSurvey": "18/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "CP-07", "jenis": "CP", "lat": 0.928395528, "lon": 104.1175313591, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "", "sosial": "Sudah", "pemilik": "Penggarap lahan", "respon": "OK", "prioritas": "Normal"}, {"id": "CP-08", "jenis": "CP", "lat": 0.9343543768, "lon": 104.1176685184, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "Tidak Bisa Akses", "situasi": "Aman", "catatan": "Tidak ada akses jalan", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Kritis"}, {"id": "CP-09", "jenis": "CP", "lat": 0.9406636569, "lon": 104.1213648163, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "CP-10", "jenis": "CP", "lat": 0.9325785139, "lon": 104.114330565, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "Belum koordinasi penggarap", "sosial": "Belum", "pemilik": "Penggarap lahan", "respon": "Tidak ada", "prioritas": "Sedang"}, {"id": "CP-11", "jenis": "CP", "lat": 0.9433877084, "lon": 104.1248407323, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "Agak sedikit terjal", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "CP-12", "jenis": "CP", "lat": 0.9493116323, "lon": 104.1173326999, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "Tidak Bisa Akses", "situasi": "Perlu Perhatian", "catatan": "Bakau dekat laut", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Kritis"}, {"id": "CP-13", "jenis": "CP", "lat": 0.9398343934, "lon": 104.1178913155, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "CP-14", "jenis": "CP", "lat": 0.9357864689, "lon": 104.1107369028, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "CP-15", "jenis": "CP", "lat": 0.9374235964, "lon": 104.1156222568, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "Setapak/Jalan Kaki", "situasi": "Aman", "catatan": "Hanya bisa jalan kaki", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Sedang"}, {"id": "CP-16", "jenis": "CP", "lat": 0.9437712993, "lon": 104.1121284828, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "CP-17", "jenis": "CP", "lat": 0.9401251807, "lon": 104.1105968653, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "CP-18", "jenis": "CP", "lat": 0.9420396859, "lon": 104.1091486826, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "CP-19", "jenis": "CP", "lat": 0.9377687122, "lon": 104.1065030935, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "CP-20", "jenis": "CP", "lat": 0.9496768852, "lon": 104.1225781188, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "Susah/Terbatas", "situasi": "Aman", "catatan": "Terletak di bakau/mangrove", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Sedang"}, {"id": "CP-21", "jenis": "CP", "lat": 0.9466624786, "lon": 104.1151644103, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "Tidak Bisa Akses", "situasi": "Perlu Perhatian", "catatan": "Alang-alang & pohon", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Kritis"}, {"id": "CP-22", "jenis": "CP", "lat": 0.9450339898, "lon": 104.1180097735, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "ICP-A", "jenis": "ICP", "lat": 0.9457576476, "lon": 104.1213904983, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "Setapak/Jalan Kaki", "situasi": "Aman", "catatan": "Akses setapak", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Sedang"}, {"id": "ICP-B", "jenis": "ICP", "lat": 0.9431842541, "lon": 104.1146622826, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "ICP-C", "jenis": "ICP", "lat": 0.9400391075, "lon": 104.1200873994, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "ICP-D", "jenis": "ICP", "lat": 0.939581336, "lon": 104.1152666964, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "ICP-E", "jenis": "ICP", "lat": 0.9390594153, "lon": 104.1089729035, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "ICP-F", "jenis": "ICP", "lat": 0.9377294689, "lon": 104.1128286381, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "ICP-G", "jenis": "ICP", "lat": 0.9351897575, "lon": 104.1156859465, "statusSurvey": "Sudah Disurvey", "tglSurvey": "14/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "ICP-H", "jenis": "ICP", "lat": 0.9338444966, "lon": 104.1203601353, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "ICP-I", "jenis": "ICP", "lat": 0.9305952432, "lon": 104.1160656686, "statusSurvey": "Belum Disurvey", "tglSurvey": "", "akses": "Belum Dicek", "situasi": "Belum Dicek", "catatan": "", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Belum Mulai"}, {"id": "ICP-J", "jenis": "ICP", "lat": 0.9311493312, "lon": 104.12107125, "statusSurvey": "Sudah Disurvey", "tglSurvey": "18/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "Sekitar kebun warga", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "ICP-K", "jenis": "ICP", "lat": 0.9305121688, "lon": 104.1282971488, "statusSurvey": "Sudah Disurvey", "tglSurvey": "18/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "Sekitar kandang ayam", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}, {"id": "ICP-L", "jenis": "ICP", "lat": 0.9247272363, "lon": 104.1209217974, "statusSurvey": "Sudah Disurvey", "tglSurvey": "18/02/2026", "akses": "OK - Mobil", "situasi": "Aman", "catatan": "Dipenuhi alang-alang sekitar", "sosial": "-", "pemilik": "", "respon": "", "prioritas": "Normal"}]},
+"food-estate":{name:"Food Estate",type:"general",zones:[],points:[],social:[]},
+"barelang-park":{name:"Barelang Park",type:"general",zones:[],points:[],social:[]}
+};
+
+var td=function(){return new Date().toISOString().split('T')[0]};
+var sd=function(d){if(!d)return'-';try{return new Date(d+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short'})}catch(e){return d}};
+var uid=function(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)};
+var esc=function(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')};
+var ddf=function(a,b){return Math.ceil((new Date(b)-new Date(a))/864e5)};
+
+var S={projects:null,page:'login',userName:'',isAdmin:false,curProj:null,tab:'home',filter:'all',modal:null,detailPt:null,syncStatus:'load',loginName:localStorage.getItem('fcc_name')||'',loginPass:'',loginErr:'',noteInput:'',schDate:td(),zoneFilter:'all'};
+
+var API_URL='https://api.jsonbin.io/v3/b/'+JSONBIN_BIN_ID;
+var saving=false;
+
+function P(){return S.curProj&&S.projects?S.projects[S.curProj]:null}
+
+async function cloudLoad(){
+if(JSONBIN_BIN_ID.indexOf('GANTI')>=0){S.syncStatus='off';if(!S.projects)S.projects=JSON.parse(JSON.stringify(SEED));render();return}
+try{S.syncStatus='load';var r=await fetch(API_URL+'/latest',{headers:{'X-Master-Key':JSONBIN_API_KEY}});
+if(!r.ok)throw new Error(r.status);var j=await r.json();var d=j.record||j;
+if(d&&d['plts-res']){S.projects=d}else{S.projects=JSON.parse(JSON.stringify(SEED));await cloudSave()}
+S.syncStatus='ok'}catch(e){S.syncStatus='off';if(!S.projects)S.projects=JSON.parse(JSON.stringify(SEED))}render()}
+
+async function cloudSave(){
+if(JSONBIN_BIN_ID.indexOf('GANTI')>=0||saving)return;saving=true;
+try{await fetch(API_URL,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY},body:JSON.stringify(S.projects)});S.syncStatus='ok'}catch(e){S.syncStatus='off'}saving=false;render()}
+
+function doLogin(){
+var n=S.loginName.trim();if(!n){S.loginErr='Isi nama';render();return}
+S.userName=n;S.isAdmin=S.loginPass===ADMIN_PASSWORD;
+localStorage.setItem('fcc_name',n);S.page='selectProject';S.loginErr='';render()}
+
+function logout(){S.page='login';S.curProj=null;S.loginPass='';render()}
+function selectProject(id){S.curProj=id;S.page='dashboard';S.tab='home';S.filter='all';render()}
+function goProjectList(){S.page='selectProject';S.curProj=null;render()}
+function setTab(t){S.tab=t;S.filter='all';render();window.scrollTo(0,0)}
+function setFilter(f){S.filter=f;render()}
+function closeModal(){S.modal=null;S.detailPt=null;render()}
+
+function openDetail(id){
+var p=P();if(!p)return;
+var pt=p.points.find(function(x){return x.id===id});
+if(pt){S.detailPt=pt;S.modal='detail';render()}}
+
+function updatePtStatus(id,status){
+var p=P();if(!p)return;
+var pt=p.points.find(function(x){return x.id===id});
+if(pt){pt.status=status;cloudSave();render()}}
+
+function updatePtSosial(id,val){
+var p=P();if(!p)return;
+var pt=p.points.find(function(x){return x.id===id});
+if(pt){pt.sosial=val;cloudSave();render()}}
+
+function updatePtField(id,field,val){
+var p=P();if(!p)return;
+var pt=p.points.find(function(x){return x.id===id});
+if(pt){pt[field]=val;cloudSave()}}
+
+function calcStats(p){
+if(!p||!p.points||!p.points.length)return null;
+var t=p.points.length,done=0,prog=0,blk=0,bm=0;
+p.points.forEach(function(x){
+var st=x.status||x.statusSurvey||'';
+if(st==='Selesai'||st==='Sudah Disurvey')done++;
+else if(st==='Dalam Proses')prog++;
+else if(st==='Blocked')blk++;
+else bm++;
+});
+return{total:t,done:done,prog:prog,blocked:blk,belum:bm,pct:t>0?Math.round(done/t*100):0}}
+
+function getToday(p){
+if(!p||!p.points)return[];var t=td();
+return p.points.filter(function(x){return x.mulai&&x.mulai<=t&&x.selesai&&x.selesai>=t})}
+
+function getAlerts(p){
+if(!p||!p.points)return[];var als=[],t=td();
+var blk=p.points.filter(function(x){return x.status==='Blocked'||(x.prioritas==='Kritis')});
+if(blk.length)als.push({t:'d',h:blk.length+' Titik Blocked/Kritis',m:blk.map(function(x){return x.id}).join(', ')});
+var h3=p.points.filter(function(x){
+if(!x.mulai||x.status==='Selesai'||x.statusSurvey==='Sudah Disurvey')return false;
+var d=ddf(t,x.mulai);return d>=0&&d<=3&&(x.sosial==='Belum'||x.sosial==='-')});
+if(h3.length)als.push({t:'w',h:'H-3 Warning: '+h3.length+' titik',m:'Lahan belum dikondisikan: '+h3.map(function(x){return x.id}).join(', ')});
+return als}
+
+function filterPoints(p){
+if(!p||!p.points)return[];var f=S.filter,pts=p.points;
+if(f==='done')return pts.filter(function(x){return x.status==='Selesai'||x.statusSurvey==='Sudah Disurvey'});
+if(f==='progress')return pts.filter(function(x){return x.status==='Dalam Proses'});
+if(f==='blocked')return pts.filter(function(x){return x.status==='Blocked'||x.prioritas==='Kritis'||x.akses==='Tidak Bisa Akses'});
+if(f==='belum')return pts.filter(function(x){return(x.status==='Belum Mulai'||x.statusSurvey==='Belum Disurvey')&&x.prioritas!=='Kritis'});
+if(f==='koordinasi')return pts.filter(function(x){return x.sosial==='Belum'||x.sosial==='-'});
+if(S.zoneFilter&&S.zoneFilter!=='all')return pts.filter(function(x){return(x.zona||'')==S.zoneFilter});
+return pts}
+
+function getSchedule(p,date){
+if(!p||!p.points)return[];
+return p.points.filter(function(x){return x.mulai&&x.mulai<=date&&x.selesai&&x.selesai>=date})}
+
+function getZoneStats(p,zona){
+if(!p)return{t:0,d:0,p:0,b:0};
+var pts=p.points.filter(function(x){return(x.zona||'')==zona});
+var d=0,pr=0,b=0;
+pts.forEach(function(x){if(x.status==='Selesai')d++;else if(x.status==='Dalam Proses')pr++;else if(x.status==='Blocked')b++});
+return{t:pts.length,d:d,p:pr,b:b}}
+
+function catColor(k){
+if(k&&k.indexOf('Boring')>=0)return'var(--br)';
+if(k&&k.indexOf('Electrical')>=0)return'var(--bl)';
+if(k&&k.indexOf('Thermal')>=0)return'var(--o)';
+if(k&&k.indexOf('Test Pit')>=0)return'#7B68AE';
+if(k&&k.indexOf('CPT')>=0)return'#2E86AB';
+if(k&&k.indexOf('Penjaga')>=0)return'var(--t3)';
+if(k==='BM')return'var(--br)';
+if(k==='CP')return'var(--bl)';
+if(k==='ICP')return'var(--g)';
+return'var(--t3)'}
+
+function statusBadge(st){
+if(st==='Selesai'||st==='Sudah Disurvey')return'<span class="bg bg-g">✓ Selesai</span>';
+if(st==='Dalam Proses')return'<span class="bg bg-b">◐ Proses</span>';
+if(st==='Blocked')return'<span class="bg bg-r">✕ Blocked</span>';
+if(st==='Belum Disurvey')return'<span class="bg bg-o">○ Belum</span>';
+return'<span class="bg bg-y">○ Belum</span>'}
+
+function exportExcel(){
+try{
+var p=P();if(!p)return;
+var wb=XLSX.utils.book_new();
+var rows=[['Kode Titik','Jenis','Zona/Wilayah','Status','Sosial','Akses','Catatan','Mulai','Selesai']];
+p.points.forEach(function(x){rows.push([x.id,x.jenis||x.jenis,x.zona||'',x.status||x.statusSurvey||'',x.sosial||'',x.akses||'',x.catatan||'',x.mulai||x.tglSurvey||'',x.selesai||''])});
+var ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:16},{wch:14},{wch:16},{wch:14},{wch:10},{wch:18},{wch:30},{wch:12},{wch:12}];
+XLSX.utils.book_append_sheet(wb,ws,'Data Titik');
+if(p.social&&p.social.length){
+var sr=[['Nama','Peran','Sikap','Catatan','Wilayah']];
+p.social.forEach(function(x){sr.push([x.nama,x.peran,x.sikap,x.catatan,x.wilayah||''])});
+var ws2=XLSX.utils.aoa_to_sheet(sr);XLSX.utils.book_append_sheet(wb,ws2,'Sosial')}
+var fname='Recap_'+p.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+td()+'.xlsx';
+XLSX.writeFile(wb,fname)}catch(e){alert('Error: '+e.message)}}
+
+function render(){var h='';
+
+// ===== LOGIN =====
+if(S.page==='login'){
+h+='<div class="lgn"><div class="lb"><div class="ll">🗺️</div><div class="lti">FIELD COMMAND</div><div class="lsu">Survey & Soil Test Monitor</div>';
+h+='<div style="text-align:left;display:flex;flex-direction:column;gap:10px">';
+h+='<div class="fl"><label>NAMA ANDA</label><input type="text" placeholder="Ketik nama..." value="'+esc(S.loginName)+'" oninput="S.loginName=this.value" onkeydown="if(event.key===\'Enter\')document.getElementById(\'lp\').focus()" style="text-align:center;font-size:18px;padding:14px" /></div>';
+h+='<div class="fl"><label>PASSWORD (KOSONGKAN JIKA BUKAN ADMIN)</label><input type="password" id="lp" placeholder="Opsional" value="'+esc(S.loginPass)+'" oninput="S.loginPass=this.value" onkeydown="if(event.key===\'Enter\')doLogin()" style="text-align:center;font-size:18px;padding:14px;letter-spacing:2px" /></div>';
+if(S.loginErr)h+='<div style="color:var(--r);font-size:14px;font-weight:700;text-align:center">'+esc(S.loginErr)+'</div>';
+h+='<button class="btn btn-g" onclick="doLogin()" style="margin-top:6px;font-size:17px;padding:14px">MASUK →</button>';
+h+='</div><div style="font-size:12px;color:var(--t3);margin-top:16px;font-weight:600">Tanpa password = akses user biasa</div></div></div>';
+document.getElementById('app').innerHTML=h;return}
+
+// ===== SELECT PROJECT =====
+if(S.page==='selectProject'){
+h+='<div style="min-height:100vh;padding:20px;padding-bottom:30px">';
+h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><div>';
+h+='<div style="font-size:13px;color:var(--t3);font-weight:600">Halo, <strong style="color:var(--tx)">'+esc(S.userName)+'</strong></div>';
+h+='<div style="font-size:20px;font-weight:900;margin-top:3px">Pilih Project</div></div>';
+h+='<div style="display:flex;gap:6px;align-items:center"><span class="rb '+(S.isAdmin?'ra':'ru')+'">'+(S.isAdmin?'🔑 Admin':'👤 User')+'</span>';
+h+='<button class="ib" onclick="logout()" title="Logout">↩</button></div></div>';
+h+='<div class="gap">';
+if(S.projects){Object.entries(S.projects).forEach(function(e){
+var id=e[0],pj=e[1],st=calcStats(pj);
+var cnt=st?st.total:0,dn=st?st.done:0,pct=st?st.pct:0;
+var typeLabel=pj.type==='soil-test'?'⛏️ Soil Test':pj.type==='topo-survey'?'📍 Topographic Survey':'📋 General';
+h+='<div class="pjc" onclick="selectProject(\''+id+'\')"><h3>'+esc(pj.name)+'</h3><p>'+typeLabel+' · '+cnt+' titik</p>';
+if(cnt>0){h+='<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">';
+h+='<span class="bg bg-g">✓ '+dn+' selesai</span>';
+h+='<span class="bg bg-b">'+pct+'% progress</span>';
+if(st.blocked>0)h+='<span class="bg bg-r">⚠ '+st.blocked+' blocked</span>';
+h+='</div>'}else{h+='<div style="margin-top:8px"><span class="bg bg-y">Belum ada data</span></div>'}
+h+='</div>'})}
+h+='</div></div>';
+document.getElementById('app').innerHTML=h;return}
+
+// ===== DASHBOARD =====
+var p=P();if(!p){S.page='selectProject';render();return}
+var st=calcStats(p),als=getAlerts(p),t=td();
+var isSoil=p.type==='soil-test',isTopo=p.type==='topo-survey';
+
+// Header
+h+='<div class="hdr"><button class="hbk" onclick="goProjectList()">←</button><div class="hi"><div class="hp">'+esc(p.name)+'</div><div class="ht">Field Command</div></div><div class="hr">';
+h+='<div class="hd">'+new Date().toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'})+'</div>';
+var syc=S.syncStatus==='ok'?'ok':S.syncStatus==='load'?'ld':'off';
+h+='<div class="sy '+syc+'">'+(S.syncStatus==='ok'?'🔗 Sync':S.syncStatus==='load'?'⟳ Loading':'⚠ Offline')+'</div>';
+h+='</div>'+(S.isAdmin?'<button class="ib" style="margin-left:4px" onclick="S.modal=\'settings\';render()">⚙</button>':'')+'</div>';
+
+// Content
+h+='<div class="ct"><div class="gap anim">';
+
+// ===== TAB: HOME =====
+if(S.tab==='home'){
+// KPIs
+if(st){
+h+='<div class="kpi">';
+h+='<div class="ki"><div class="kn" style="color:var(--tx)">'+st.total+'</div><div class="kl">TOTAL</div></div>';
+h+='<div class="ki"><div class="kn" style="color:var(--g)">'+st.done+'</div><div class="kl">SELESAI</div></div>';
+h+='<div class="ki"><div class="kn" style="color:var(--bl)">'+st.prog+'</div><div class="kl">PROSES</div></div>';
+h+='<div class="ki"><div class="kn" style="color:var(--r)">'+(st.blocked+st.belum)+'</div><div class="kl">SISA</div></div>';
+h+='</div>';
+// Progress bar
+var pct=st.pct;
+h+='<div class="cd"><div class="bw"><div class="bh"><span>Progress Keseluruhan</span><span style="color:var(--g)">'+pct+'%</span></div>';
+h+='<div class="bt"><div class="bf" style="width:'+pct+'%;background:var(--g)"></div></div></div></div>';
+}
+
+// Alerts
+als.forEach(function(a){
+h+='<div class="al '+(a.t==='d'?'al-d':'al-w')+'"><span class="al-ic">'+(a.t==='d'?'🚨':'⚠️')+'</span><div><div class="al-t">'+esc(a.h)+'</div><div class="al-m">'+esc(a.m)+'</div></div></div>'});
+
+// Briefing Hari Ini
+var todayPts=[];
+if(isSoil){todayPts=getSchedule(p,t)}
+if(todayPts.length){
+h+='<div class="cd"><div class="sec">📋 BRIEFING HARI INI</div>';
+h+='<div style="font-size:13px;color:var(--t2);margin-bottom:6px;font-weight:600">'+todayPts.length+' pekerjaan aktif hari ini</div>';
+todayPts.forEach(function(x){
+var c=catColor(x.jenis||x.kategori);
+h+='<div class="si" style="margin-bottom:4px"><div class="sdot" style="background:'+c+'"></div><div class="sin">'+esc(x.id)+'</div><div class="siz">'+esc(x.zona||x.jenis)+'</div>'+statusBadge(x.status)+'</div>'});
+h+='</div>'}else if(isTopo){
+var surveyed=p.points.filter(function(x){return x.statusSurvey==='Sudah Disurvey'}).length;
+var belum=p.points.length-surveyed;
+h+='<div class="cd"><div class="sec">📋 RINGKASAN SURVEY</div>';
+h+='<div style="font-size:13px;color:var(--t2);line-height:1.5">'+surveyed+' titik sudah disurvey dari '+p.points.length+' total. <strong style="color:var(--r)">'+belum+' titik</strong> masih perlu dikerjakan.</div></div>'}
+
+// Zone/Category breakdown
+if(isSoil&&p.zones&&p.zones.length){
+h+='<div class="cd"><div class="sec">🗺️ PER WILAYAH</div>';
+p.zones.forEach(function(z){
+var zs=getZoneStats(p,z.nama);if(zs.t===0)return;
+var zpct=zs.t>0?Math.round(zs.d/zs.t*100):0;
+h+='<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:3px"><span>'+esc(z.nama)+'</span><span style="color:var(--g)">'+zs.d+'/'+zs.t+'</span></div>';
+h+='<div class="bt"><div class="bf" style="width:'+zpct+'%;background:var(--g)"></div></div></div>'});
+h+='</div>'}
+if(isTopo){
+var types={BM:0,CP:0,ICP:0},typeD={BM:0,CP:0,ICP:0};
+p.points.forEach(function(x){types[x.jenis]=(types[x.jenis]||0)+1;if(x.statusSurvey==='Sudah Disurvey')typeD[x.jenis]=(typeD[x.jenis]||0)+1});
+h+='<div class="cd"><div class="sec">📊 PER JENIS TITIK</div>';
+['BM','CP','ICP'].forEach(function(k){
+var tt=types[k]||0,dd=typeD[k]||0,pp=tt>0?Math.round(dd/tt*100):0;
+h+='<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:3px"><span style="color:'+catColor(k)+'">'+k+'</span><span>'+dd+'/'+tt+'</span></div>';
+h+='<div class="bt"><div class="bf" style="width:'+pp+'%;background:'+catColor(k)+'"></div></div></div>'});
+h+='</div>'}
+
+h+='<button class="btn btn-ex" onclick="exportExcel()">📥 EXPORT RECAP EXCEL</button>';
+}
+
+// ===== TAB: JADWAL =====
+if(S.tab==='jadwal'){
+h+='<div class="fl"><label>PILIH TANGGAL</label><input type="date" value="'+S.schDate+'" onchange="S.schDate=this.value;render()" /></div>';
+var sch=isSoil?getSchedule(p,S.schDate):p.points.filter(function(x){return x.tglSurvey&&x.tglSurvey.split('/').reverse().join('-')===S.schDate});
+h+='<div class="sd"><div class="sdt">'+sd(S.schDate)+' — '+sch.length+' pekerjaan</div><div class="sdi">';
+if(!sch.length)h+='<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">Tidak ada jadwal di tanggal ini</div>';
+sch.forEach(function(x){
+var c=catColor(x.jenis||x.kategori);
+h+='<div class="si" onclick="openDetail(\''+esc(x.id)+'\')" style="cursor:pointer;padding:10px"><div class="sdot" style="background:'+c+'"></div>';
+h+='<div style="flex:1;min-width:0"><div class="sin">'+esc(x.id)+'</div><div style="font-size:10px;color:var(--t3)">'+esc(x.jenis||'')+' · '+esc(x.zona||'')+'</div></div>';
+h+=statusBadge(x.status||x.statusSurvey||'');
+h+='</div>'});
+h+='</div></div>'}
+
+// ===== TAB: TITIK =====
+if(S.tab==='titik'){
+h+='<div class="cps">';
+[{id:'all',l:'Semua'},{id:'done',l:'✓ Selesai'},{id:'progress',l:'◐ Proses'},{id:'blocked',l:'✕ Blocked'},{id:'belum',l:'○ Belum'},{id:'koordinasi',l:'🤝 Koordinasi'}].forEach(function(f){
+h+='<button class="cp '+(S.filter===f.id?'on':'')+'" onclick="setFilter(\''+f.id+'\')">'+f.l+'</button>'});
+h+='</div>';
+
+var fpts=filterPoints(p);
+h+='<div style="font-size:12px;color:var(--t3);font-weight:600;margin:4px 0">'+fpts.length+' titik ditampilkan</div>';
+
+fpts.forEach(function(x){
+var c=catColor(x.jenis||x.kategori);
+var stLabel=x.status||x.statusSurvey||'Belum';
+h+='<div class="pc" onclick="openDetail(\''+esc(x.id)+'\')">';
+h+='<div class="pr"><div class="pi" style="background:'+c+'20;color:'+c+'">'+esc((x.jenis||'?').substring(0,2))+'</div>';
+h+='<div><div class="pn">'+esc(x.id)+'</div><div class="ps">'+esc(x.jenis||'')+(x.zona?' · '+esc(x.zona):'')+'</div></div>';
+h+='<div class="pst">'+statusBadge(stLabel)+'</div></div></div>'});
+if(!fpts.length)h+='<div style="text-align:center;padding:30px;color:var(--t3);font-size:14px">Tidak ada titik di filter ini</div>'}
+
+// ===== TAB: SOSIAL =====
+if(S.tab==='sosial'){
+if(isSoil&&p.zones){
+h+='<div class="sec">🗺️ WILAYAH & TOKOH</div>';
+p.zones.forEach(function(z){
+var zs=getZoneStats(p,z.nama);
+h+='<div class="zc" style="margin-bottom:8px"><div class="zn">'+esc(z.nama)+'</div>';
+h+='<div style="font-size:12px;color:var(--t2);margin-top:3px">Tokoh: '+esc((z.tokoh||[]).join(', '))+'</div>';
+h+='<div class="zs"><span class="zst" style="background:var(--gl);color:var(--g)">'+zs.d+' selesai</span>';
+h+='<span class="zst" style="background:var(--bll);color:var(--bl)">'+zs.p+' proses</span>';
+h+='<span class="zst" style="background:var(--sf2);color:var(--t3)">'+(zs.t-zs.d-zs.p-zs.b)+' belum</span>';
+if(zs.b)h+='<span class="zst" style="background:var(--rl);color:var(--r)">'+zs.b+' blocked</span>';
+h+='</div>';
+h+='<div style="font-size:11px;color:var(--t3);margin-top:4px">'+esc(z.catatan||'')+'</div></div>'})}
+
+if(isTopo&&p.social){
+h+='<div class="sec">👥 NARASUMBER & TOKOH</div>';
+p.social.forEach(function(s){
+var sikColor=s.sikap==='Mendukung'?'bg-g':s.sikap==='Kontra'?'bg-r':'bg-o';
+h+='<div class="sc-card" style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center">';
+h+='<div><div style="font-size:14px;font-weight:700">'+esc(s.nama)+'</div><div style="font-size:11px;color:var(--t3)">'+esc(s.peran)+' · '+esc(s.wilayah||'')+'</div></div>';
+h+='<span class="bg '+sikColor+'">'+esc(s.sikap)+'</span></div>';
+if(s.catatan)h+='<div style="font-size:12px;color:var(--t2);margin-top:6px;line-height:1.3">💬 '+esc(s.catatan)+'</div>';
+h+='</div>'})}
+
+if(!isSoil&&!isTopo){h+='<div style="text-align:center;padding:40px;color:var(--t3)">Belum ada data sosial</div>'}}
+
+// ===== TAB: RECAP =====
+if(S.tab==='recap'){
+if(st){
+h+='<div class="cd"><div class="sec">📊 RINGKASAN</div>';
+h+='<div class="dr"><div class="dl">Total Titik</div><div class="dv">'+st.total+'</div></div>';
+h+='<div class="dr"><div class="dl">Selesai</div><div class="dv" style="color:var(--g)">'+st.done+' ('+st.pct+'%)</div></div>';
+h+='<div class="dr"><div class="dl">Dalam Proses</div><div class="dv" style="color:var(--bl)">'+st.prog+'</div></div>';
+h+='<div class="dr"><div class="dl">Blocked</div><div class="dv" style="color:var(--r)">'+st.blocked+'</div></div>';
+h+='<div class="dr"><div class="dl">Belum Mulai</div><div class="dv">'+st.belum+'</div></div>';
+h+='</div>'}
+
+if(isSoil&&p.zones){
+h+='<div class="cd"><div class="sec">👷 MANDAYS PER WILAYAH</div>';
+p.zones.forEach(function(z){
+var pts=p.points.filter(function(x){return x.zona===z.nama});
+var md=0;pts.forEach(function(x){md+=(x.helper||0)*parseInt(x.durasi)||0});
+h+='<div class="dr"><div class="dl">'+esc(z.nama)+'</div><div class="dv">'+md+' man-days</div></div>'});
+h+='</div>'}
+
+h+='<button class="btn btn-ex" onclick="exportExcel()" style="margin-top:6px">📥 EXPORT EXCEL</button>';
+
+// Log section placeholder
+h+='<div style="margin-top:10px;text-align:center;font-size:12px;color:var(--t3)">Data terakhir sync: '+(S.syncStatus==='ok'?'✓ Connected':'⚠ Offline')+'</div>'}
+
+// Close content
+h+='</div></div>';
+
+// ===== BOTTOM NAV =====
+var blocked=st?st.blocked:0;
+h+='<div class="nv">';
+[{id:'home',i:'🏠',l:'Beranda',b:0},{id:'jadwal',i:'📅',l:'Jadwal',b:0},{id:'titik',i:'📍',l:'Titik',b:0},{id:'sosial',i:'👥',l:'Sosial',b:0},{id:'recap',i:'📤',l:'Recap',b:blocked}].forEach(function(n){
+h+='<button class="nb '+(S.tab===n.id?'on':'')+'" onclick="setTab(\''+n.id+'\')">'+(n.b>0?'<span class="nbg">'+n.b+'</span>':'')+'<span class="ni">'+n.i+'</span><span class="nl">'+n.l+'</span></button>'});
+h+='</div>';
+
+// ===== MODAL: DETAIL =====
+if(S.modal==='detail'&&S.detailPt){
+var x=S.detailPt;
+h+='<div class="ov" onclick="closeModal()"><div class="ovb"></div><div class="md" onclick="event.stopPropagation()">';
+h+='<div class="mh"><span class="mt">'+esc(x.id)+'</span><button class="mx" onclick="closeModal()">✕</button></div>';
+h+='<div class="mb">';
+
+// Status badge
+h+='<div style="display:flex;gap:6px;flex-wrap:wrap">'+statusBadge(x.status||x.statusSurvey||'');
+if(x.jenis)h+='<span class="bg bg-b">'+esc(x.jenis)+'</span>';
+if(x.zona)h+='<span class="bg bg-y">'+esc(x.zona)+'</span>';
+h+='</div>';
+
+// Google Earth link (topo only)
+if(x.lat&&x.lon){
+h+='<a class="eb" href="https://earth.google.com/web/@'+x.lat+','+x.lon+',50a,500d,35y,0h,0t,0r" target="_blank" rel="noopener">🌍 BUKA GOOGLE EARTH</a>';
+h+='<a class="eb" style="border-color:var(--bl);color:var(--bl);background:var(--bll)" href="https://maps.google.com/?q='+x.lat+','+x.lon+'" target="_blank" rel="noopener">📍 BUKA GOOGLE MAPS</a>'}
+
+// Details
+h+='<div class="ds">';
+if(x.lat)h+='<div class="dr"><div class="dl">Koordinat</div><div class="dv">'+x.lat.toFixed(7)+', '+x.lon.toFixed(7)+'</div></div>';
+if(x.mulai)h+='<div class="dr"><div class="dl">Jadwal</div><div class="dv">'+sd(x.mulai)+(x.selesai&&x.selesai!==x.mulai?' - '+sd(x.selesai):'')+'</div></div>';
+if(x.durasi)h+='<div class="dr"><div class="dl">Durasi</div><div class="dv">'+esc(x.durasi)+'</div></div>';
+if(x.helper)h+='<div class="dr"><div class="dl">Helper</div><div class="dv">'+x.helper+' orang/hari</div></div>';
+if(x.tglSurvey)h+='<div class="dr"><div class="dl">Tgl Survey</div><div class="dv">'+esc(x.tglSurvey)+'</div></div>';
+h+='<div class="dr"><div class="dl">Akses</div><div class="dv">'+(x.akses&&x.akses!=='Belum Dicek'?esc(x.akses):'<span style="color:var(--t3)">Belum dicek</span>')+'</div></div>';
+h+='</div>';
+
+// Sosial & Lahan
+h+='<div class="ds"><div class="sec">🤝 KONDISI SOSIAL & LAHAN</div>';
+h+='<div class="dr"><div class="dl">Status Lahan</div><div class="dv">'+(x.sosial==='Sudah'?'<span style="color:var(--g)">✅ Sudah Dikondisikan</span>':x.sosial==='Belum'?'<span style="color:var(--r)">⚠ Belum Dikondisikan</span>':'<span style="color:var(--t3)">'+esc(x.sosial||'-')+'</span>')+'</div></div>';
+if(x.pemilik)h+='<div class="dr"><div class="dl">Pemilik/Penggarap</div><div class="dv">'+esc(x.pemilik)+'</div></div>';
+if(x.respon)h+='<div class="dr"><div class="dl">Respon</div><div class="dv">'+esc(x.respon)+'</div></div>';
+h+='</div>';
+
+// Catatan
+h+='<div class="ds"><div class="sec">📝 CATATAN & MITIGASI</div>';
+if(x.catatan)h+='<div style="font-size:13px;color:var(--t2);line-height:1.4;padding:8px;background:var(--sf2);border-radius:8px;margin-bottom:8px">'+esc(x.catatan)+'</div>';
+if(x.akses==='Tidak Bisa Akses')h+='<div class="al al-d" style="margin:0"><span class="al-ic">🚧</span><div><div class="al-t">Akses Blocked</div><div class="al-m">Perlu relokasi titik atau cari akses alternatif</div></div></div>';
+if(x.akses==='Susah/Terbatas'||x.akses==='Setapak/Jalan Kaki')h+='<div class="al al-w" style="margin:0"><span class="al-ic">🥾</span><div><div class="al-t">Akses Terbatas</div><div class="al-m">Bawa: alat tebas, sepatu boot. Akses hanya kaki/motor</div></div></div>';
+h+='</div>';
+
+// Quick actions
+if(S.isAdmin){
+h+='<div class="ds"><div class="sec">⚡ QUICK UPDATE</div>';
+h+='<div class="g2" style="margin-bottom:8px">';
+h+='<button class="btn btn-g" style="font-size:13px;padding:10px" onclick="updatePtStatus(\''+esc(x.id)+'\',\'Selesai\');closeModal()">✓ Selesai</button>';
+h+='<button class="btn btn-bl" style="font-size:13px;padding:10px" onclick="updatePtStatus(\''+esc(x.id)+'\',\'Dalam Proses\');closeModal()">◐ Proses</button>';
+h+='<button class="btn btn-r" style="font-size:13px;padding:10px" onclick="updatePtStatus(\''+esc(x.id)+'\',\'Blocked\');closeModal()">✕ Blocked</button>';
+h+='<button class="btn btn-o" style="font-size:13px;padding:10px" onclick="updatePtStatus(\''+esc(x.id)+'\',\'Belum Mulai\');closeModal()">○ Reset</button></div>';
+h+='<div class="g2">';
+h+='<button class="qb qo" onclick="updatePtSosial(\''+esc(x.id)+'\',\'Sudah\');closeModal()">✅ Lahan Aman</button>';
+h+='<button class="qb qx" onclick="updatePtSosial(\''+esc(x.id)+'\',\'Belum\');closeModal()">⚠ Belum Aman</button>';
+h+='</div></div>'}
+
+h+='</div></div></div>';
+}
+
+// ===== MODAL: SETTINGS =====
+if(S.modal==='settings'&&S.isAdmin){
+h+='<div class="ov" onclick="closeModal()"><div class="ovb"></div><div class="md" onclick="event.stopPropagation()">';
+h+='<div class="mh"><span class="mt">⚙ Pengaturan</span><button class="mx" onclick="closeModal()">✕</button></div>';
+h+='<div class="mb">';
+h+='<div style="font-size:14px;font-weight:800;color:var(--g)">'+esc(p.name)+'</div>';
+h+='<div style="font-size:12px;color:var(--t3)">Tipe: '+(isSoil?'Soil Test':isTopo?'Topo Survey':'General')+'</div>';
+h+='<div style="font-size:12px;color:var(--t3)">Total titik: '+(st?st.total:0)+'</div>';
+h+='<div class="ds"><div style="font-size:13px;font-weight:700;color:var(--r)">⚠ Reset semua status ke Belum Mulai?</div>';
+h+='<button class="btn btn-r" style="margin-top:8px;font-size:13px" onclick="if(confirm(\'Reset semua status?\')){P().points.forEach(function(x){x.status=\'Belum Mulai\'});cloudSave();closeModal()}">Reset Status</button>';
+h+='</div></div></div></div>'}
+
+document.getElementById('app').innerHTML=h}
+
+cloudLoad();
+</script></body></html>
