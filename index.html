@@ -114,7 +114,7 @@ var uid=function(){return Date.now().toString(36)+Math.random().toString(36).sli
 var esc=function(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')};
 var ddf=function(a,b){return Math.ceil((new Date(b)-new Date(a))/864e5)};
 
-var S={projects:null,page:'login',userName:'',isAdmin:false,curProj:null,tab:'home',filter:'all',modal:null,detailPt:null,syncStatus:'load',loginName:localStorage.getItem('fcc_name')||'',loginPass:'',loginErr:'',schDate:td()};
+var S={projects:null,page:'login',userName:'',isAdmin:false,curProj:null,tab:'home',filter:'all',modal:null,detailPt:null,syncStatus:'load',loginName:localStorage.getItem('fcc_name')||'',loginPass:'',loginErr:'',schDate:td(),search:''};
 
 var API_URL='https://api.jsonbin.io/v3/b/'+JSONBIN_BIN_ID;
 var saving=false;
@@ -131,6 +131,61 @@ S.syncStatus='ok'}catch(e){S.syncStatus='off';if(!S.projects)S.projects=JSON.par
 async function cloudSave(){
 if(JSONBIN_BIN_ID.indexOf('GANTI')>=0||saving)return;saving=true;
 try{await fetch(API_URL,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY},body:JSON.stringify(S.projects)});S.syncStatus='ok'}catch(e){S.syncStatus='off'}saving=false;render()}
+
+
+function parseScheduleExcel(file){
+var reader=new FileReader();
+reader.onload=function(e){
+try{
+var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+var ws=wb.Sheets[wb.SheetNames[0]];
+var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+var p=P();if(!p)return;
+if(!p.dailySchedule)p.dailySchedule=[];
+var added=0,updated=0;
+var curDate='',curJenis='',curWilayah='',curHelper=0;
+for(var i=1;i<rows.length;i++){
+var r=rows[i];if(!r||r.length<2)continue;
+var no=r[0],tgl=r[1],kode=String(r[2]||'').trim(),jenis=String(r[3]||'').trim(),wil=String(r[4]||'').trim(),hlp=parseInt(r[5])||0,ket=String(r[6]||'').trim();
+if(!kode&&!jenis)continue;
+if(kode.toLowerCase()==='total'||jenis.toLowerCase()==='total')continue;
+var dateStr='';
+if(tgl){
+if(tgl instanceof Date){dateStr=tgl.toISOString().split('T')[0]}
+else{var ds=String(tgl).trim();
+var m={'jan':'01','feb':'02','mar':'03','apr':'04','may':'05','jun':'06','jul':'07','aug':'08','sep':'09','oct':'10','nov':'11','dec':'12'};
+var parts=ds.replace(/[\/\-]/g,'-').split('-');
+if(parts.length===3){
+var dd=parts[0].replace(/\D/g,''),mm=parts[1].toLowerCase().replace(/\d/g,''),yy=parts[2].replace(/\D/g,'');
+if(m[mm.substring(0,3)])mm=m[mm.substring(0,3)];
+if(yy.length===2)yy='20'+yy;
+if(dd&&mm&&yy)dateStr=yy+'-'+mm.padStart(2,'0')+'-'+dd.padStart(2,'0')}}}
+if(dateStr)curDate=dateStr;
+if(jenis)curJenis=jenis;
+if(wil)curWilayah=wil;
+if(hlp>0)curHelper=hlp;
+if(!kode||!curDate)continue;
+var codes=kode.split('\n').map(function(s){return s.trim()}).filter(Boolean);
+if(codes.length===0)codes=[kode];
+codes.forEach(function(code){
+code=code.replace(/\s*\(Shift\)\s*/gi,'').replace(/\s*shift\s*/gi,'').trim();
+if(!code)return;
+var existing=p.dailySchedule.find(function(s){return s.date===curDate&&s.kode===code});
+if(existing){existing.jenis=curJenis||existing.jenis;existing.wilayah=curWilayah||existing.wilayah;existing.helper=curHelper||existing.helper;existing.keterangan=ket||existing.keterangan;updated++}
+else{p.dailySchedule.push({date:curDate,kode:code,jenis:curJenis,wilayah:curWilayah,helper:curHelper,keterangan:ket,status:'Plan'});added++}
+var pt=p.points.find(function(x){
+var pid=x.id.replace(/[\-\s\/]/g,'').toUpperCase();
+var cid=code.replace(/[\-\s\/]/g,'').toUpperCase();
+return pid===cid});
+if(pt){
+if(!pt.mulai||pt.mulai>curDate)pt.mulai=curDate;
+if(!pt.selesai||pt.selesai<curDate)pt.selesai=curDate;
+if(curWilayah&&(!pt.zona||pt.zona==='Transition Joint Bay'&&curWilayah!=='Transition Joint Bay'))pt.zona=curWilayah;
+if(curHelper>0)pt.helper=curHelper}})};
+cloudSave();
+alert('✅ Jadwal diupload!\nTambah: '+added+' | Update: '+updated);
+render()}catch(ex){alert('❌ Error parsing: '+ex.message)}};
+reader.readAsArrayBuffer(file)}
 
 function doLogin(){var n=S.loginName.trim();if(!n){S.loginErr='Isi nama';render();return}
 S.userName=n;S.isAdmin=S.loginPass===ADMIN_PASSWORD;localStorage.setItem('fcc_name',n);S.page='selectProject';S.loginErr='';render()}
@@ -160,6 +215,7 @@ wkDone:wkD,wkProg:wkP,wkStop:wkS,wkBelum:wkB,wkPct:t>0?Math.round(wkD/t*100):0}}
 
 function filterPoints(p){
 if(!p||!p.points)return[];var f=S.filter,pts=p.points;
+if(S.search){var q=S.search.toUpperCase().replace(/[\-\s\/]/g,'');pts=pts.filter(function(x){return x.id.replace(/[\-\s\/]/g,'').toUpperCase().indexOf(q)>=0})}
 if(f==='sv-done')return pts.filter(function(x){return x.surveyStatus==='Selesai'});
 if(f==='sv-belum')return pts.filter(function(x){return x.surveyStatus!=='Selesai'});
 if(f==='wk-done')return pts.filter(function(x){return x.workStatus==='Selesai'});
@@ -282,19 +338,34 @@ h+='<button class="btn btn-ex" onclick="exportExcel()">📥 EXPORT RECAP EXCEL</
 
 // ===== JADWAL =====
 if(S.tab==='jadwal'){
+h+='<div class="cd" style="border:2px dashed var(--g);background:var(--gl);text-align:center;padding:18px"><div style="font-size:16px;font-weight:800;color:var(--g);margin-bottom:6px">📤 Upload Jadwal Harian (Excel)</div><div style="font-size:12px;color:var(--t2);margin-bottom:10px">Upload file schedule & MPP update dari OE</div><label style="display:inline-block;padding:10px 20px;background:var(--g);color:#fff;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Pilih File Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="if(this.files[0])parseScheduleExcel(this.files[0])" /></label></div>';
+
 h+='<div class="fl"><label>PILIH TANGGAL</label><input type="date" value="'+S.schDate+'" onchange="S.schDate=this.value;render()" /></div>';
 var sch=getSchedule(p,S.schDate);
+var daily=(p.dailySchedule||[]).filter(function(s){return s.date===S.schDate});
+if(daily.length>0&&sch.length===0){
+h+='<div class="sd"><div class="sdt">'+sd(S.schDate)+' — '+daily.length+' pekerjaan (dari upload)</div><div class="sdi">';
+daily.forEach(function(d){
+var c=catColor(d.jenis);
+var dpt=p.points.find(function(x){return x.id.replace(/[\-\s\/]/g,'').toUpperCase()===d.kode.replace(/[\-\s\/]/g,'').toUpperCase()});
+h+='<div class="si" style="padding:10px;cursor:pointer" onclick="'+(dpt?'openDetail(\''+esc(dpt.id)+'\')':'')+'">';
+h+='<div class="sdot" style="background:'+c+'"></div><div style="flex:1;min-width:0"><div class="sin">'+esc(d.kode)+'</div>';
+h+='<div style="font-size:10px;color:var(--t3)">'+esc(d.jenis)+' · '+esc(d.wilayah)+' · '+d.helper+' helper</div></div>';
+h+='<span class="bg '+(d.status==='Done'?'bg-g':d.status==='Proses'?'bg-b':'bg-y')+'">'+esc(d.status)+'</span></div>'});
+h+='</div></div>';
+}else{
 h+='<div class="sd"><div class="sdt">'+sd(S.schDate)+' — '+sch.length+' pekerjaan</div><div class="sdi">';
-if(!sch.length)h+='<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">Tidak ada jadwal</div>';
+if(!sch.length&&daily.length===0)h+='<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">Tidak ada jadwal</div>';
 sch.forEach(function(x){
 var c=catColor(x.kategori);
 h+='<div class="si" onclick="openDetail(\''+esc(x.id)+'\')" style="cursor:pointer;padding:10px"><div class="sdot" style="background:'+c+'"></div>';
 h+='<div style="flex:1;min-width:0"><div class="sin">'+esc(x.id)+'</div><div style="font-size:10px;color:var(--t3)">'+esc(x.jenisPekerjaan||'')+' · '+esc(x.zona||'')+'</div></div>';
 h+=workBadge(x.workStatus)+'</div>'});
-h+='</div></div>'}
+h+='</div></div>'}}
 
 // ===== TITIK =====
 if(S.tab==='titik'){
+h+='<div class="fl" style="margin-bottom:6px"><input type="text" placeholder="🔍 Cari kode titik..." value="'+esc(S.search)+'" oninput="S.search=this.value;render()" style="font-size:15px;padding:12px;border-radius:12px" /></div>';
 h+='<div class="cps">';
 [{id:'all',l:'Semua'},{id:'sv-done',l:'✓ Surveyed'},{id:'sv-belum',l:'○ Blm Survey'},{id:'wk-done',l:'✓ Kerja Done'},{id:'wk-proses',l:'◐ Proses'},{id:'wk-stop',l:'⚠ Terhenti'},{id:'wk-belum',l:'○ Blm Kerja'},{id:'sosial',l:'🤝 Sosial'}].forEach(function(f){
 h+='<button class="cp '+(S.filter===f.id?'on':'')+'" onclick="setFilter(\''+f.id+'\')">'+f.l+'</button>'});
