@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -98,6 +98,23 @@ input,select,button,textarea{font-family:var(--fn);font-size:16px;color:var(--tx
 .zst{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
 .sc-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:12px;box-shadow:var(--sh)}
 @media(min-width:640px){.md{border-radius:20px;border-bottom:1px solid var(--bd);max-height:80vh}.ov{align-items:center}}
+
+.qa-row{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.qa-btn{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1px solid var(--bd);background:var(--sf);cursor:pointer;transition:all .15s;white-space:nowrap}
+.qa-btn:active{transform:scale(.95)}
+.qa-done{border-color:var(--g);color:var(--g);background:var(--gl)}
+.qa-done:active{background:var(--g);color:#fff}
+.qa-prog{border-color:var(--bl);color:var(--bl);background:var(--bll)}
+.qa-stop{border-color:var(--r);color:var(--r);background:var(--rl)}
+.qa-surv{border-color:var(--o);color:#8B6914;background:#FFF8E1}
+.upl-titik{border:2px dashed var(--bl);background:var(--bll);text-align:center;padding:14px;border-radius:14px;margin-bottom:8px}
+.upl-titik label{display:inline-block;padding:8px 16px;background:var(--bl);color:#fff;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+.notif-md{max-height:70vh;overflow-y:auto}
+.notif-sec{margin-top:10px;padding:8px;border-radius:8px;font-size:12px}
+.notif-ok{background:var(--gl);border:1px solid var(--g)}
+.notif-warn{background:#FFF3E0;border:1px solid var(--o)}
+.notif-info{background:var(--bll);border:1px solid var(--bl)}
+
 </style>
 </head>
 <body>
@@ -270,6 +287,103 @@ XLSX.writeFile(wb,'Recap_'+P().name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+td()+'.xlsx
 var _sTimer=null;
 function doSearch(val){S.search=val;clearTimeout(_sTimer);_sTimer=setTimeout(render,300)}
 
+/* ========== TRACKER EXCEL UPLOAD ========== */
+function parseTrackerExcel(file){
+if(file.type&&file.type.startsWith('image/')){alert('Upload file Excel (.xlsx), bukan gambar.');return}
+var reader=new FileReader();
+reader.onload=function(e){
+try{
+var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+var ws=wb.Sheets[wb.SheetNames[0]];
+var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+var p=P();if(!p)return;
+var exRows=[];
+for(var i=0;i<rows.length;i++){
+var r=rows[i];if(!r||r.length<3)continue;
+var pid=String(r[2]||'').trim();
+if(!pid||pid.toLowerCase()==='point id'||pid.toLowerCase()==='kode titik')continue;
+var method=String(r[0]||'').trim(),area=String(r[1]||'').trim(),status=String(r[3]||'').trim(),dt=String(r[4]||'').trim(),remark=String(r[5]||'').trim();
+if(dt&&dt.indexOf('00:00:00')>=0)dt=dt.split(' ')[0];
+if(remark==='None'||remark==='undefined')remark='';
+exRows.push({id:pid,method:method,area:area,status:status,date:dt,remark:remark})}
+function nm(s){return s.replace(/[\-\s\/]/g,'').toUpperCase()}
+var ptMap={};p.points.forEach(function(pt){ptMap[nm(pt.id)]=pt});
+var updated=[],notInApp=[],notInExcel=[];
+var exNorms={};exRows.forEach(function(row){exNorms[nm(row.id)]=true});
+p.points.forEach(function(pt){if(!exNorms[nm(pt.id)])notInExcel.push(pt.id)});
+exRows.forEach(function(row){
+var key=nm(row.id);var pt=ptMap[key];
+if(!pt){notInApp.push(row);return}
+var changed=false,detail='',oldW=pt.workStatus;
+if(row.status==='Completed'&&pt.workStatus!=='Selesai'){
+pt.workStatus='Selesai';pt.workProgress=100;pt.surveyStatus='Selesai';pt.kondisiSosial='Kondusif';
+if(row.date)pt.workCatatan=(pt.workCatatan?pt.workCatatan+' | ':'')+'Selesai '+row.date;
+pt.workMitigasiSistem='';pt.surveyMitigasiSistem='';
+changed=true;detail=oldW+' \u2192 Selesai'+(row.date?' ('+row.date+')':'')}
+else if(row.status==='Hold'&&pt.workStatus!=='Terhenti'){
+pt.workStatus='Terhenti';pt.workProgress=0;pt.workIssue='Hold';
+changed=true;detail=oldW+' \u2192 Terhenti (Hold)'}
+else if(row.status==='Plan'&&pt.workStatus==='Terhenti'){
+pt.workStatus='Belum Mulai';pt.workProgress=0;pt.workIssue='';pt.workMitigasiSistem='';
+changed=true;detail='Terhenti \u2192 Belum Mulai (Plan)'}
+else if(row.status==='Additional'){
+changed=true;detail='Titik tambahan (Additional)';
+pt.workCatatan=(pt.workCatatan?pt.workCatatan+' | ':'')+'Additional'}
+if(row.remark){var cur=pt.workCatatan||'';
+if(cur.indexOf(row.remark)<0){pt.workCatatan=(cur?cur+' | ':'')+row.remark;
+if(!changed){changed=true;detail='+ Remark: '+row.remark}}}
+if(changed)updated.push({id:pt.id,detail:detail})});
+cloudSave();
+S.modal='uploadResult';S.uploadResult={updated:updated,notInApp:notInApp,notInExcel:notInExcel,total:exRows.length};render()
+}catch(ex){alert('\u274c Error: '+ex.message)}};
+reader.readAsArrayBuffer(file)}
+
+function addMissingFromUpload(){
+var r=S.uploadResult;if(!r)return;var p=P();if(!p)return;var added=0;
+r.notInApp.forEach(function(row){
+var jenis=row.method||'',kat='';
+if(jenis.indexOf('Bore')>=0){jenis='Deep Boring';kat='\u26cf\ufe0f Boring'}
+else if(jenis.indexOf('Test')>=0){jenis='Test Pit';kat='\ud83d\udd73\ufe0f Test Pit'}
+else if(jenis.indexOf('Resist')>=0){jenis='E/T Resistivity';kat='\u26a1 E/T-RT'}
+else if(jenis.indexOf('CPT')>=0){jenis='CPT';kat='\ud83d\udcd0 CPT'}
+var area='';
+if(row.area.indexOf('PV')>=0)area='PV';
+else if(row.area.indexOf('Transmission')>=0)area='TL';
+else if(row.area.indexOf('Substation')>=0||row.area.indexOf('Pooling')>=0)area='SS';
+else if(row.area.indexOf('Joint')>=0||row.area.indexOf('TJB')>=0)area='TJB';
+var ws='Belum Mulai',wp=0,wi='';
+if(row.status==='Completed'){ws='Selesai';wp=100}
+else if(row.status==='Hold'){ws='Terhenti';wp=0;wi='Hold'}
+var svs=ws==='Selesai'?'Selesai':'Belum';
+p.points.push({id:row.id,jenisPekerjaan:jenis,kategori:kat,area:area,zona:row.area,
+helper:0,durasi:'',mulai:'',selesai:'',
+surveyStatus:svs,pemilik:'',kondisiSosial:ws==='Selesai'?'Kondusif':'Belum Dicek',
+surveyCatatan:'',surveyMitigasiSistem:svs!=='Selesai'?'Survey lokasi, identifikasi pemilik, koordinasi sosial':'',surveyMitigasiManual:'',
+workStatus:ws,workProgress:wp,workIssue:wi,
+workCatatan:row.date?row.date+(row.remark?' - '+row.remark:''):'',
+workMitigasiSistem:'',workMitigasiManual:'',akses:'',lat:0,lon:0});added++});
+cloudSave();alert('\u2705 '+added+' titik baru ditambahkan!');S.modal=null;render()}
+
+/* ========== QUICK STATUS ========== */
+function quickDone(id,ev){ev.stopPropagation();var p=P();if(!p)return;
+var pt=p.points.find(function(x){return x.id===id});if(!pt)return;
+pt.workStatus='Selesai';pt.workProgress=100;pt.surveyStatus='Selesai';pt.kondisiSosial='Kondusif';
+pt.workCatatan=(pt.workCatatan?pt.workCatatan+' | ':'')+'Selesai '+td();
+pt.workMitigasiSistem='';pt.surveyMitigasiSistem='';cloudSave();render()}
+
+function quickProses(id,ev){ev.stopPropagation();var p=P();if(!p)return;
+var pt=p.points.find(function(x){return x.id===id});if(!pt)return;
+if(pt.surveyStatus!=='Selesai'){pt.surveyStatus='Selesai';pt.kondisiSosial='Kondusif'}
+pt.workStatus='Dalam Proses';pt.workProgress=50;cloudSave();render()}
+
+function quickStop(id,ev){ev.stopPropagation();var p=P();if(!p)return;
+var pt=p.points.find(function(x){return x.id===id});if(!pt)return;
+pt.workStatus='Terhenti';pt.workIssue='Sosial';cloudSave();render()}
+
+function quickSurv(id,ev){ev.stopPropagation();var p=P();if(!p)return;
+var pt=p.points.find(function(x){return x.id===id});if(!pt)return;
+pt.surveyStatus='Selesai';pt.surveyMitigasiSistem='';cloudSave();render()}
+
 /* ========== RENDER ========== */
 function render(){
 /* preserve focused element cursor position */
@@ -358,6 +472,7 @@ else{h+='<div style="text-align:center;padding:30px;color:var(--t3);font-size:13
 
 /* ========== TITIK ========== */
 if(S.tab==='titik'){
+h+='<div class="upl-titik"><div style="font-size:14px;font-weight:800;color:var(--bl);margin-bottom:4px">\ud83d\udce4 Upload Data Progress (Excel)</div><div style="font-size:11px;color:var(--t2);margin-bottom:8px">Format: Method | Area | Point ID | Status | Date | Remarks</div><label>Pilih File Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="if(this.files[0])parseTrackerExcel(this.files[0])" /></label></div>';
 h+='<div class="fl" style="margin-bottom:6px"><input type="text" id="iSearch" placeholder="🔍 Cari kode titik..." value="'+esc(S.search)+'" oninput="doSearch(this.value)" style="font-size:15px;padding:12px;border-radius:12px" /></div>';
 h+='<div class="cps">';
 [{id:'all',l:'Semua'},{id:'sv-done',l:'✓ Surveyed'},{id:'sv-belum',l:'○ Blm Survey'},{id:'wk-done',l:'✓ Done'},{id:'wk-proses',l:'◐ Proses'},{id:'wk-stop',l:'⚠ Stop'},{id:'wk-belum',l:'○ Blm Kerja'},{id:'sosial',l:'🤝 Sosial'}].forEach(function(f){
@@ -371,7 +486,13 @@ fpts.forEach(function(x){var c=catColor(x.kategori||x.jenisPekerjaan);
 h+='<div class="pc" onclick="openDetail(\''+esc(x.id)+'\')">';
 h+='<div class="pr"><div class="pi" style="background:'+c+'20;color:'+c+'">'+esc((x.area||'?').substring(0,2))+'</div>';
 h+='<div style="flex:1;min-width:0"><div class="pn">'+esc(x.id)+'</div><div class="ps">'+esc(x.jenisPekerjaan||'')+' · '+esc(x.zona||'')+'</div></div>';
-h+='<div class="pst" style="display:flex;flex-direction:column;gap:2px">'+survBadge(x.surveyStatus)+workBadge(x.workStatus)+'</div></div></div>'});
+h+='<div class="pst" style="display:flex;flex-direction:column;gap:2px">'+survBadge(x.surveyStatus)+workBadge(x.workStatus)+'</div></div>';
+h+='<div class="qa-row">';
+if(x.workStatus!=='Selesai')h+='<button class="qa-btn qa-done" onclick="quickDone(\''+esc(x.id)+'\',event)">\u2705 Done</button>';
+if(x.workStatus!=='Dalam Proses'&&x.workStatus!=='Selesai')h+='<button class="qa-btn qa-prog" onclick="quickProses(\''+esc(x.id)+'\',event)">\u25d0 Proses</button>';
+if(x.workStatus!=='Terhenti')h+='<button class="qa-btn qa-stop" onclick="quickStop(\''+esc(x.id)+'\',event)">\u26a0 Stop</button>';
+if(x.surveyStatus!=='Selesai')h+='<button class="qa-btn qa-surv" onclick="quickSurv(\''+esc(x.id)+'\',event)">\ud83d\udccb Survey</button>';
+h+='</div></div>'});
 if(!fpts.length)h+='<div style="text-align:center;padding:30px;color:var(--t3)">Tidak ditemukan</div>'}
 
 /* ========== SOSIAL ========== */
@@ -488,6 +609,31 @@ h+='<div class="ds">';
 if(!x.lat||x.lat===0){h+='<div class="sec">📍 INPUT KOORDINAT</div><div style="display:flex;gap:8px"><div class="fl" style="flex:1"><label>LAT</label><input type="number" step="0.0000001" placeholder="0.85..." onchange="updateField(\''+esc(x.id)+'\',\'lat\',parseFloat(this.value)||0)" /></div><div class="fl" style="flex:1"><label>LON</label><input type="number" step="0.0000001" placeholder="104.1..." onchange="updateField(\''+esc(x.id)+'\',\'lon\',parseFloat(this.value)||0)" /></div></div>'}
 h+='<button class="btn btn-r" style="font-size:13px;padding:10px;margin-top:8px" onclick="deletePoint(\''+esc(x.id)+'\')">🗑️ Hapus Titik (Admin)</button></div>'}
 
+h+='</div></div></div>'}
+
+/* UPLOAD RESULT MODAL */
+if(S.modal==='uploadResult'&&S.uploadResult){
+var ur=S.uploadResult;
+h+='<div class="ov" onclick="S.modal=null;render()"><div class="ovb"></div><div class="md" onclick="event.stopPropagation()">';
+h+='<div class="mh"><span class="mt">\ud83d\udcca Hasil Upload</span><button class="mx" onclick="S.modal=null;render()">\u2715</button></div>';
+h+='<div class="mb notif-md">';
+h+='<div style="font-size:13px;color:var(--t2);margin-bottom:8px">Total di Excel: <strong>'+ur.total+'</strong> titik</div>';
+if(ur.updated.length){
+h+='<div class="notif-sec notif-ok"><div style="font-weight:800;color:var(--g);margin-bottom:4px">\u2705 Berhasil di-update: '+ur.updated.length+' titik</div>';
+ur.updated.forEach(function(u){h+='<div style="font-size:11px;padding:2px 0;color:var(--t2)"><strong>'+esc(u.id)+'</strong> \u2014 '+esc(u.detail)+'</div>'});
+h+='</div>'}else{h+='<div class="notif-sec notif-ok"><div style="font-weight:800;color:var(--g)">\u2705 Tidak ada perubahan status \u2014 data sudah sinkron</div></div>'}
+if(ur.notInApp.length){
+h+='<div class="notif-sec notif-warn"><div style="font-weight:800;color:var(--o);margin-bottom:4px">\u26a0\ufe0f Ada di Excel tapi TIDAK ada di app: '+ur.notInApp.length+' titik</div>';
+ur.notInApp.forEach(function(n){h+='<div style="font-size:11px;padding:2px 0;color:var(--t2)"><strong>'+esc(n.id)+'</strong> \u2014 '+esc(n.method)+' \u00b7 '+esc(n.area)+' \u00b7 '+esc(n.status)+'</div>'});
+h+='<button class="btn btn-o" style="font-size:12px;padding:8px;margin-top:6px" onclick="addMissingFromUpload()">+ Tambahkan '+ur.notInApp.length+' Titik ke App</button>';
+h+='<button class="btn" style="font-size:12px;padding:8px;margin-top:4px;background:var(--sf);color:var(--t3)" onclick="S.modal=null;render()">Abaikan</button>';
+h+='</div>'}
+if(ur.notInExcel.length){
+h+='<div class="notif-sec notif-info"><div style="font-weight:800;color:var(--bl);margin-bottom:4px">\ud83d\udccd Ada di app tapi TIDAK ada di Excel: '+ur.notInExcel.length+' titik</div>';
+h+='<div style="font-size:11px;color:var(--t2)">'+ur.notInExcel.slice(0,15).map(function(n){return'<strong>'+esc(n)+'</strong>'}).join(', ');
+if(ur.notInExcel.length>15)h+=' ... dan '+(ur.notInExcel.length-15)+' lainnya';
+h+='</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Titik-titik ini tetap aman, tidak diubah.</div></div>'}
+if(!ur.notInApp.length){h+='<button class="btn btn-g" style="font-size:13px;padding:10px;margin-top:8px" onclick="S.modal=null;render()">OK, Tutup</button>'}
 h+='</div></div></div>'}
 
 /* SETTINGS MODAL */
