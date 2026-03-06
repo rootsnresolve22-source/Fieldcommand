@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -115,6 +115,25 @@ input,select,button,textarea{font-family:var(--fn);font-size:16px;color:var(--tx
 .notif-warn{background:#FFF3E0;border:1px solid var(--o)}
 .notif-info{background:var(--bll);border:1px solid var(--bl)}
 
+
+/* Photo */
+.photo-grid{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.photo-thumb{width:72px;height:72px;border-radius:8px;object-fit:cover;border:2px solid var(--bd);cursor:pointer}
+.photo-thumb:active{opacity:.7}
+.photo-full{position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:10px}
+.photo-full img{max-width:100%;max-height:90vh;border-radius:8px}
+.photo-full .mx{position:absolute;top:12px;right:12px;background:#fff;width:36px;height:36px;border-radius:50%;font-size:20px;border:none;cursor:pointer;z-index:1000}
+.photo-add{width:72px;height:72px;border-radius:8px;border:2px dashed var(--bd);display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--t3);cursor:pointer;background:var(--sf)}
+.photo-add:active{background:var(--bd)}
+.photo-del{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--r);color:#fff;font-size:10px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.photo-wrap{position:relative;display:inline-block}
+/* Advanced filter bar */
+.af-bar{display:flex;gap:4px;margin:6px 0;flex-wrap:wrap;align-items:center}
+.af-sel{font-size:11px;padding:4px 8px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--tx);font-weight:600;min-width:0}
+.af-sel:focus{border-color:var(--bl);outline:none}
+.af-count{font-size:11px;color:var(--t3);font-weight:700;background:var(--sf);padding:3px 8px;border-radius:6px;white-space:nowrap}
+.af-tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap}
+
 </style>
 </head>
 <body>
@@ -132,7 +151,7 @@ var esc=function(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt
 var ddf=function(a,b){return Math.ceil((new Date(b)-new Date(a))/864e5)};
 
 /* ========== STATE ========== */
-var S={projects:null,page:'login',userName:'',isAdmin:false,curProj:null,tab:'home',filter:'all',modal:null,detailPt:null,syncStatus:'load',loginName:localStorage.getItem('fcc_name')||'',loginPass:'',loginErr:'',schDate:td(),search:''};
+var S={projects:null,page:'login',userName:'',isAdmin:false,curProj:null,tab:'home',filter:'all',modal:null,detailPt:null,syncStatus:'load',loginName:localStorage.getItem('fcc_name')||'',loginPass:'',loginErr:'',schDate:td(),search:'',fArea:'all',fMethod:'all',fSort:'default',fDate:'',viewPhoto:null,uploadResult:null};
 var API_URL='https://api.jsonbin.io/v3/b/'+JSONBIN_BIN_ID;
 var saving=false;
 function P(){return S.curProj&&S.projects?S.projects[S.curProj]:null}
@@ -257,6 +276,23 @@ return{total:t,svDone:svD,svProg:svP,svBelum:svB,svPct:t?Math.round(svD/t*100):0
 function filterPoints(p){
 if(!p||!p.points)return[];var f=S.filter,pts=p.points.slice();
 if(S.search){var q=S.search.toUpperCase().replace(/[\-\s\/]/g,'');pts=pts.filter(function(x){return x.id.replace(/[\-\s\/]/g,'').toUpperCase().indexOf(q)>=0})}
+/* area filter */
+if(S.fArea&&S.fArea!=='all')pts=pts.filter(function(x){return x.area===S.fArea});
+/* method filter */
+if(S.fMethod&&S.fMethod!=='all'){var fm=S.fMethod.toUpperCase();
+pts=pts.filter(function(x){var j=(x.jenisPekerjaan||'').toUpperCase();var k=(x.kategori||'').toUpperCase();var i=x.id.toUpperCase();
+if(fm==='BH'||fm==='BORING')return j.indexOf('BORING')>=0;
+if(fm==='TP')return j.indexOf('TEST PIT')>=0;
+if(fm==='RT'||fm==='RESISTIVITY')return j.indexOf('RESISTIV')>=0||j.indexOf('ERT')>=0||j.indexOf('E/T')>=0;
+if(fm==='THERMAL')return j.indexOf('THERMAL')>=0;
+if(fm==='CPT')return j.indexOf('CPT')>=0;
+if(fm==='PENJAGA')return j.indexOf('PENJAGA')>=0;
+if(fm==='BM')return j.indexOf('BM')>=0;
+if(fm==='CP')return j.indexOf(' CP')>=0&&j.indexOf('CPT')<0;
+if(fm==='ICP')return j.indexOf('ICP')>=0;
+return j.indexOf(fm)>=0||k.indexOf(fm)>=0})}
+/* date filter */
+if(S.fDate){pts=pts.filter(function(x){return x.mulai===S.fDate||x.selesai===S.fDate||(x.mulai&&x.selesai&&x.mulai<=S.fDate&&x.selesai>=S.fDate)})}
 if(f==='sv-done')return pts.filter(function(x){return x.surveyStatus==='Selesai'});
 if(f==='sv-belum')return pts.filter(function(x){return x.surveyStatus!=='Selesai'});
 if(f==='wk-done')return pts.filter(function(x){return x.workStatus==='Selesai'});
@@ -264,8 +300,12 @@ if(f==='wk-proses')return pts.filter(function(x){return x.workStatus==='Dalam Pr
 if(f==='wk-stop')return pts.filter(function(x){return x.workStatus==='Terhenti'});
 if(f==='wk-belum')return pts.filter(function(x){return x.workStatus==='Belum Mulai'});
 if(f==='sosial')return pts.filter(function(x){return x.kondisiSosial==='Belum Dicek'||x.kondisiSosial==='Bermasalah'||x.kondisiSosial==='Belum Kondusif'});
+/* sort */
+if(S.fSort==='date-new')pts.sort(function(a,b){return(b.mulai||'').localeCompare(a.mulai||'')});
+if(S.fSort==='date-old')pts.sort(function(a,b){return(a.mulai||'9').localeCompare(b.mulai||'9')});
+if(S.fSort==='id')pts.sort(function(a,b){return a.id.localeCompare(b.id)});
+if(S.fSort==='status')pts.sort(function(a,b){var o={Selesai:0,'Dalam Proses':1,Terhenti:2,'Belum Mulai':3};return(o[a.workStatus]||9)-(o[b.workStatus]||9)});
 return pts}
-
 function catColor(k){if(!k)return'var(--t3)';var s=String(k).toLowerCase();
 if(s.indexOf('boring')>=0)return'var(--br)';if(s.indexOf('ert')>=0||s.indexOf('electrical')>=0||s.indexOf('resistiv')>=0||s.indexOf('e/t')>=0)return'var(--bl)';
 if(s.indexOf('thermal')>=0)return'var(--o)';if(s.indexOf('test pit')>=0)return'#7B68AE';
@@ -384,6 +424,40 @@ function quickSurv(id,ev){ev.stopPropagation();var p=P();if(!p)return;
 var pt=p.points.find(function(x){return x.id===id});if(!pt)return;
 pt.surveyStatus='Selesai';pt.surveyMitigasiSistem='';cloudSave();render()}
 
+/* ========== PHOTO ========== */
+function addPhoto(id,ev){
+ev.stopPropagation();
+var inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.capture='environment';
+inp.onchange=function(){
+var file=inp.files[0];if(!file)return;
+if(file.size>2*1024*1024){alert('Foto terlalu besar (max 2MB). Coba foto dengan resolusi lebih rendah.');return}
+var reader=new FileReader();
+reader.onload=function(e){
+var p=P();if(!p)return;
+var pt=p.points.find(function(x){return x.id===id});if(!pt)return;
+if(!pt.photos)pt.photos=[];
+if(pt.photos.length>=6){alert('Maksimal 6 foto per titik');return}
+pt.photos.push({data:e.target.result,date:td(),by:S.userName});
+cloudSave();render()};
+reader.readAsDataURL(file)};
+inp.click()}
+
+function deletePhoto(id,idx,ev){
+ev.stopPropagation();
+if(!confirm('Hapus foto ini?'))return;
+var p=P();if(!p)return;
+var pt=p.points.find(function(x){return x.id===id});
+if(pt&&pt.photos){pt.photos.splice(idx,1);cloudSave();render()}}
+
+function viewPhoto(key){S.viewPhoto=key;render()}
+function closePhoto(){S.viewPhoto=null;render()}
+
+/* ========== ADVANCED FILTER HELPERS ========== */
+function setFArea(v){S.fArea=v;render()}
+function setFMethod(v){S.fMethod=v;render()}
+function setFSort(v){S.fSort=v;render()}
+function setFDate(v){S.fDate=v;render()}
+
 /* ========== RENDER ========== */
 function render(){
 /* preserve focused element cursor position */
@@ -472,14 +546,44 @@ else{h+='<div style="text-align:center;padding:30px;color:var(--t3);font-size:13
 
 /* ========== TITIK ========== */
 if(S.tab==='titik'){
+/* count helpers */
+var _ap=p.points,_areas={},_methods={};
+_ap.forEach(function(x){
+var a=x.area||'?';_areas[a]=(_areas[a]||0)+1;
+var m=x.jenisPekerjaan||'?';
+if(m.indexOf('Boring')>=0)m='Boring';else if(m.indexOf('Test Pit')>=0)m='Test Pit';
+else if(m.indexOf('Resistiv')>=0||m.indexOf('ERT')>=0||m.indexOf('E/T')>=0)m='Resistivity';
+else if(m.indexOf('Thermal')>=0)m='Thermal';else if(m.indexOf('CPT')>=0)m='CPT';
+else if(m.indexOf('Penjaga')>=0)m='Penjaga';
+_methods[m]=(_methods[m]||0)+1});
 h+='<div class="upl-titik"><div style="font-size:14px;font-weight:800;color:var(--bl);margin-bottom:4px">\ud83d\udce4 Upload Data Progress (Excel)</div><div style="font-size:11px;color:var(--t2);margin-bottom:8px">Format: Method | Area | Point ID | Status | Date | Remarks</div><label>Pilih File Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="if(this.files[0])parseTrackerExcel(this.files[0])" /></label></div>';
 h+='<div class="fl" style="margin-bottom:6px"><input type="text" id="iSearch" placeholder="🔍 Cari kode titik..." value="'+esc(S.search)+'" oninput="doSearch(this.value)" style="font-size:15px;padding:12px;border-radius:12px" /></div>';
 h+='<div class="cps">';
 [{id:'all',l:'Semua'},{id:'sv-done',l:'✓ Surveyed'},{id:'sv-belum',l:'○ Blm Survey'},{id:'wk-done',l:'✓ Done'},{id:'wk-proses',l:'◐ Proses'},{id:'wk-stop',l:'⚠ Stop'},{id:'wk-belum',l:'○ Blm Kerja'},{id:'sosial',l:'🤝 Sosial'}].forEach(function(f){
 h+='<button class="cp '+(S.filter===f.id?'on':'')+'" onclick="setFilter(\''+f.id+'\')">'+f.l+'</button>'});
 h+='</div>';
+/* Advanced filter bar */
+h+='<div class="af-bar">';
+h+='<select class="af-sel" onchange="setFArea(this.value)"><option value="all"'+(S.fArea==='all'?' selected':'')+'>Area: Semua</option>';
+['PV','TL','SS','TJB'].forEach(function(a){var c=_areas[a]||0;h+='<option value="'+a+'"'+(S.fArea===a?' selected':'')+'>'+a+' ('+c+')</option>'});
+h+='</select>';
+h+='<select class="af-sel" onchange="setFMethod(this.value)"><option value="all"'+(S.fMethod==='all'?' selected':'')+'>Jenis: Semua</option>';
+[['BH','Boring'],['TP','Test Pit'],['RT','Resistivity'],['THERMAL','Thermal'],['CPT','CPT'],['PENJAGA','Penjaga']].forEach(function(m){var c=_methods[m[1]]||0;h+='<option value="'+m[0]+'"'+(S.fMethod===m[0]?' selected':'')+'>'+m[1]+' ('+c+')</option>'});
+h+='</select>';
+h+='<select class="af-sel" onchange="setFSort(this.value)"><option value="default"'+(S.fSort==='default'?' selected':'')+'>Urutan: Default</option><option value="date-new"'+(S.fSort==='date-new'?' selected':'')+'>Terbaru</option><option value="date-old"'+(S.fSort==='date-old'?' selected':'')+'>Terlama</option><option value="id"'+(S.fSort==='id'?' selected':'')+'>Kode A-Z</option><option value="status"'+(S.fSort==='status'?' selected':'')+'>Status</option></select>';
+h+='<input type="date" class="af-sel" value="'+(S.fDate||'')+'" onchange="setFDate(this.value)" style="max-width:130px" title="Filter tanggal spesifik" />';
+if(S.fDate)h+='<button class="qa-btn" onclick="setFDate(\'\')" style="font-size:10px">✕ Reset Tgl</button>';
+h+='</div>';
 var fpts=filterPoints(p);
-h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0"><span style="font-size:12px;color:var(--t3);font-weight:600">'+fpts.length+' titik</span>';
+var _filterInfo=[];
+if(S.fArea!=='all')_filterInfo.push('Area: '+S.fArea);
+if(S.fMethod!=='all')_filterInfo.push('Jenis: '+S.fMethod);
+if(S.fDate)_filterInfo.push('Tgl: '+sd(S.fDate));
+if(S.search)_filterInfo.push('Cari: '+S.search);
+h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0;flex-wrap:wrap;gap:4px">';
+h+='<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:var(--t3);font-weight:600">'+fpts.length+' titik</span>';
+if(_filterInfo.length)_filterInfo.forEach(function(fi){h+='<span class="af-tag" style="background:var(--bll);color:var(--bl)">'+esc(fi)+'</span>'});
+h+='</div>';
 if(S.isAdmin)h+='<button class="qb qo" onclick="addPoint()">+ Tambah Titik</button>';
 h+='</div>';
 fpts.forEach(function(x){var c=catColor(x.kategori||x.jenisPekerjaan);
@@ -579,6 +683,19 @@ if(x.durasi)h+='<div class="dr"><div class="dl">Durasi</div><div class="dv">'+es
 if(x.helper)h+='<div class="dr"><div class="dl">Helper</div><div class="dv">'+x.helper+'/hari</div></div>';
 h+='</div>';
 
+/* PHOTO SECTION */
+h+='<div class="ds"><div class="sec">\ud83d\udcf8 FOTO DOKUMENTASI</div>';
+h+='<div class="photo-grid">';
+if(x.photos&&x.photos.length){x.photos.forEach(function(ph,pi){
+h+='<div class="photo-wrap"><img class="photo-thumb" src="'+ph.data+'" onclick="viewPhoto(\''+ph.data.substring(0,50)+'___'+esc(x.id)+'___'+pi+'\')" />';
+h+='<button class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+esc(x.id)+'\','+pi+',event)">\u2715</button></div>'})}
+if(!x.photos||x.photos.length<6){h+='<label class="photo-add" onclick="event.stopPropagation()">+<input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(\''+esc(x.id)+'\',event);this.value=\'\'" /></label>'}
+h+='</div>';
+if(x.photos&&x.photos.length){h+='<div style="font-size:10px;color:var(--t3);margin-top:4px">'+x.photos.length+'/6 foto';
+if(x.photos[x.photos.length-1].by)h+=' \u00b7 Terakhir oleh '+esc(x.photos[x.photos.length-1].by)+' ('+x.photos[x.photos.length-1].date+')';
+h+='</div>'}
+h+='</div>';
+
 /* SURVEY SECTION */
 h+='<div class="ds"><div class="sec">📋 PROGRESS SURVEY</div>';
 h+='<div class="fl"><label>STATUS SURVEY</label><select onchange="updateFieldRender(\''+esc(x.id)+'\',\'surveyStatus\',this.value)"><option value="Belum"'+(x.surveyStatus==='Belum'?' selected':'')+'>Belum</option><option value="Proses"'+(x.surveyStatus==='Proses'?' selected':'')+'>Proses</option><option value="Selesai"'+(x.surveyStatus==='Selesai'?' selected':'')+'>Selesai</option></select></div>';
@@ -635,6 +752,17 @@ if(ur.notInExcel.length>15)h+=' ... dan '+(ur.notInExcel.length-15)+' lainnya';
 h+='</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Titik-titik ini tetap aman, tidak diubah.</div></div>'}
 if(!ur.notInApp.length){h+='<button class="btn btn-g" style="font-size:13px;padding:10px;margin-top:8px" onclick="S.modal=null;render()">OK, Tutup</button>'}
 h+='</div></div></div>'}
+
+/* PHOTO VIEWER */
+if(S.viewPhoto){
+var _vparts=S.viewPhoto.split('___');
+var _vid=_vparts[1]||'';var _vpi=parseInt(_vparts[2])||0;
+var _vpt=P()?P().points.find(function(x){return x.id===_vid}):null;
+var _vimg=(_vpt&&_vpt.photos&&_vpt.photos[_vpi])?_vpt.photos[_vpi].data:'';
+if(_vimg){
+h+='<div class="photo-full" onclick="closePhoto()"><button class="mx" onclick="closePhoto()">\u2715</button>';
+h+='<img src="'+_vimg+'" onclick="event.stopPropagation()" />';
+h+='</div>'}}
 
 /* SETTINGS MODAL */
 if(S.modal==='settings'&&S.isAdmin){
